@@ -74,9 +74,6 @@
       #+allegro CURRENT-DIRECTORY 
       #+cmucl DEFAULT-DIRECTORY))
   
-;; create dir for output images, if it's not exists
-;;(setf (getf *settings* :create-out-dir) t)
-
 ;;------------------------------------------------------------------------------
 ;; convertion options
 ;;--------------------------------------
@@ -135,7 +132,3 @@
 
 (defun set-working-dir-out (path)
   (setf (getf *settings* :working-dir-out) path))
-
-
-
-  

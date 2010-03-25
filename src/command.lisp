@@ -71,45 +71,6 @@ TODO Add default values.
     save-filename))
     
 
-;; (setf (getf *settings* :working-dir-in) #p"/storage/lisp/sbcl/vector-test/in/")
-;; (setf (getf *settings* :working-dir-out) #p"/storage/lisp/sbcl/vector-test/out/")
-
-;;(resize-to-200-dpi #p"01.tif" :dest-filename #p"11.png")
-
-;; (convert-image #p"02.tif" :dest-filename #p"02.png" :options '("-sharpen" "3x3" "-threshold" "60%" "-colors" "2"))
-;; (get-out-path  #p"02.tif")
-
-;; (get-image-info (namestring (get-in-path #p"01.tif")))
-
-
-;; (defun thin-file (filename   &key (outfile-name (getf *settings* :temp-pgm-file)))
-;;   "Thin a file.
-;; Resize and threshold file, then, convert to PGM, then thin and save to
-;; outfile-name. Result also saves to png.
-;;    "
-;;   (resize-to-200-dpi filename)
-;;   (let ((pgm-image (get-out-path (change-extension filename "pgm")))
-;; 	(out-pgm-image (get-out-path outfile-name)))
-;;     (thin-image-file (namestring pgm-image) (namestring out-pgm-image))
-;;     ;;(dumb-convert out-pgm-image (get-out-path (change-extension filename "png")))
-;; ))
-
-;; (thin-image-file (namestring (get-out-path #p"Data003.pgm")) (namestring (get-out-path (getf *settings* :temp-pgm-file))))
-
-;;(time (thin-file #p"Data003.tif"))
-
-;; WORKING SAMPLE
-;; (convert-image  "/storage/lisp/sbcl/vector-test/in/01.tif"
-;; 		"/storage/lisp/sbcl/vector-test/in/01.png"
-;; 		:options '("-adaptive-resize" "25%" "-colors" "2" "-threshold" "55%"))
-
-;; (defun thin-image-file (filename outfile)
-;;   (let* ((info (get-image-info filename))
-;; 	 (dimensions (list (getf info :width) (getf info :height)))
-;; 	 (data (cdr (read-pgm-file filename))))
-;;     (write-hash-as-pgm-file-with-dimensions (thin-image data) dimensions outfile)
-;;     't))
-
 (defun thin-image-file (infile &key (outfile (change-extension infile "png")))
   "Thin image in one file and save to another"
   (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
@@ -117,18 +78,9 @@ TODO Add default values.
 	 (w (png:image-width image))
 	 (h (png:image-height image))
 	 (ht (thin-image-hash (image-to-hashtable image))))
-    (save-image (hashtable-to-image ht w h) outfile)
+    (save-image (hashtable-to-image ht w h) (get-out-path outfile))
     t))
 
-
-;; +TEST+
-;;(get-image-info "./out/03.tif")
-;;(get-image-info "./in/01.tif")
-;;(guess-format-by-info (get-image-info  "./in/Data003.tif"))
-;;(guess-format-by-info   '(:YRESOLUTION 300 :XRESOLUTION 300 :HEIGHT 3794 :WIDTH 2759))
-;;(guess-format   "./in/03.tif" )
-;; -TEST-
- 
 (defun guess-format (image-path)
   "return format of image based on it's DPI.
 list of formats: 'A0 'A1 'A2 'A3 'A4 'A5 'A6 'A7"
@@ -160,24 +112,3 @@ list of formats: 'A0 'A1 'A2 'A3 'A4 'A5 'A6 'A7"
 				   (third x))) formats-list))
     (second min)))
 
-
-
-    
-
-
-
-;;------------------------------------------------------------------------------
-;;------------------------------------------------------------------------------
-
-;; (defun main ()
-;;   (format t "first ~s ~%" (tokenize (first (run-command-return-output (get-identify-path) :arguments '("./out/03.tif"))))))
-;;  (pprint (run-command-return-output "/bin/ls" :arguments '("-l"))))
-
-
-;; +TEST+  Test of read-write file
-;; (time (let* ((V (read-pgm-file "/storage/lisp/sbcl/vector/out/03.pgm"))
-;;        (data (rest V)))
-;;   (format t "File was readed succesful ~d ~%" (length data ))
-;;   (write-pgm-file "/storage/lisp/sbcl/vector/out/30.pgm" '(910 1252) data)
-;;   (pprint 'ok)))
-;; -TEST-

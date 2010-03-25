@@ -27,7 +27,6 @@
 
 (defun get-hash-point-value (point hash)
   "Return value of point in hash."
-;;(format t "point = ~s ~%" point)
   (cond
    ((eq (in-hash point hash) nil) 0)
    ('t 1)))
@@ -105,25 +104,14 @@ Example:
 		      (t bg-color)))))
     image))
 
-;;(thin-image-file "/storage/lisp/sbcl/vector-test/out/01.pgm" 
-;;	    "/storage/lisp/sbcl/vector-test/out/02.pgm")
+(defun get-neibhour-points (point hash-points)
+  "Get neibhours points near specified point.
+   p9  p2  p3
+   p8  p1  p4
+   p7  p6  p5
 
-;; (defun thin-image (points-list)
-;;   (thin-image-hash (convert-to-hash-table points-list +black+)))
-
-
-;; (defun convert-to-hash-table (data-list value)
-;;   "convert list of data to hash table.
-;; each element of list is a key of new hash table 
-;; all values of hash is set to |value| "
-;;   (let ((ht (make-hash-table :test 'equal :size (length data-list))))
-;;     (dolist (key data-list)
-;;     (setf (gethash key ht) value))
-;;     ht))
-
-;; 
-(defun is-single-point (point hash-points)
-  "DEBUG function, return true if Point have no neibhours."
+   p1 is a specified point. Point returns in list '(p2 p3 p4 p5 p6 p7 p8 p9)
+"
   (let 	((p2 (get-hash-point-value (list (- (first point) 1) (second point)) hash-points))
 	 (p3 (get-hash-point-value (list (- (first point) 1) (+ (second point) 1)) hash-points))
 	 (p4 (get-hash-point-value (list (first point) (+ (second point) 1)) hash-points))
@@ -132,7 +120,7 @@ Example:
 	 (p7 (get-hash-point-value (list (+ (first point) 1) (- (second point) 1)) hash-points))
 	 (p8 (get-hash-point-value (list (first point) (- (second point) 1)) hash-points))
 	 (p9 (get-hash-point-value (list (- (first point) 1) (- (second point) 1)) hash-points)))
-    (= 1 p2 p3 p4 p5 p6 p7 p8 p9)))
+    (list p2 p3 p4 p5 p6 p7 p8 p9)))
 
 ;; DEBUG function
 (defun pprint-point-neibs (point hash-points)
@@ -146,5 +134,35 @@ Example:
 	 (p8 (get-hash-point-value (list (first point) (- (second point) 1)) hash-points))
 	 (p9 (get-hash-point-value (list (- (first point) 1) (- (second point) 1)) hash-points)))
     (format t "~s ~s ~s~%~s 1 ~s~%~s ~s ~s~%" p9 p2 p3 p8 p4 p7 p6 p5)))
+
+(defun should-delete-point (point hash-points)
+  "Check if point should be deleted. 
+   This check consists of three parts:
+   1) Point have 0 neibhours.
+   2) Point have 2 neibhours and this neibhours defined by one of four masks:
+       Legend:
+       p9  p2  p3
+       p8  p1  p4
+       p7  p6  p5
+
+       Masks:
+       0  1  0    0  1  0    0  0  0    0  0  0
+       1  1  0    0  1  1    0  1  1    1  1  0
+       0  0  0    0  0  0    0  1  0    0  1  0
+   3) Point have 3+ neibhours.
+
+   Point should be deleted of one of conditions performed.
+"
+  (let* ((points (get-neibhour-points point hash-points))
+	 (sum (apply #'+ points)))
+    (or
+     (= 0 sum)
+     (and (= 2 sum)
+	  (or
+	   (equal points '(1 0 0 0 0 0 1 0))
+	   (equal points '(1 0 1 0 0 0 0 0))
+	   (equal points '(0 0 1 0 1 0 0 0))
+	   (equal points '(0 0 0 0 1 0 1 0))))
+     (>= sum 3))))
 
 
