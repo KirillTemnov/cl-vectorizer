@@ -58,7 +58,12 @@ TODO Add default values.
 	 (w (getf info :width))
 	 (h (getf info :height))
 	 (save-filename (or dest-filename (change-extension image-name "png"))))
-    (when (and (> x-dpi +min-dpi+ ) (> y-dpi +min-dpi+))
+    (when (and 				; if no info about dpi is provided
+	   (not (eq nil x-dpi))		; image will not be resized 
+	   (not	(eq nil y-dpi))
+	   (and 
+	    (> x-dpi +min-dpi+ ) 
+	    (> y-dpi +min-dpi+)))
 	(setf w (round (/ w (/ x-dpi +min-dpi+))))
 	(setf h (round (/ h (/ x-dpi +min-dpi+))))
 	  )
@@ -77,9 +82,18 @@ TODO Add default values.
 	 (image (load-image image-path))
 	 (w (png:image-width image))
 	 (h (png:image-height image))
-	 (ht (thin-image-hash (image-to-hashtable image))))
+	 (ht (thin-image-hash (image-to-hashtable image)))
+	 lines-ht)
+    (format t "vectorize ... ~%" )
+    (setf lines-ht (vectorize-hash ht))
+    ;; (format t "megre lines ... ~%")
+    ;; (remove-hash-lines-duplecates lines-ht)
+    ;; (setf lines-ht (remove-hash-lines-duplecates (merge-near-lines lines-ht)))
+    (format t "export to svg ... ~%")
+    ;;
+    (save-hashtable-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
-    t))
+    lines-ht))
 
 (defun guess-format (image-path)
   "return format of image based on it's DPI.

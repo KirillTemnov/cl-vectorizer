@@ -19,11 +19,27 @@
 	     (tokenize (subseq string (1+ pos)))))      
       (t (list (string-trim '(#\Space #\Tab) string))))))
 
+(defun write-to-file (content filename)
+  "Write content to file (filename). Overwrite existing file"
+  (with-open-file (stream  filename 
+			   :direction :output
+			   :if-exists :overwrite
+			   :if-does-not-exist :create)
+    (format stream content))
+  filename)
 
+(defun mapconcat (func elems)
+  "Execute function on each of elems and concatenate all results in a string."
+  (cond 
+    ((eq nil elems) "")
+    (t
+     (concatenate 'string
+		  (funcall func (first elems))
+		  (mapconcat func (cdr elems))))))
 
 (defun in-hash(key hash)
   "Check if key in hash."
-  (not (eq (gethash key hash) nil)))
+  (not (eq nil (gethash key hash nil))))
 
 (defun get-hash-point-value (point hash)
   "Return value of point in hash."
@@ -112,15 +128,49 @@ Example:
 
    p1 is a specified point. Point returns in list '(p2 p3 p4 p5 p6 p7 p8 p9)
 "
-  (let 	((p2 (get-hash-point-value (list (- (first point) 1) (second point)) hash-points))
-	 (p3 (get-hash-point-value (list (- (first point) 1) (+ (second point) 1)) hash-points))
-	 (p4 (get-hash-point-value (list (first point) (+ (second point) 1)) hash-points))
-	 (p5 (get-hash-point-value (list (+ (first point) 1) (+ (second point) 1)) hash-points))
-	 (p6 (get-hash-point-value (list (+ (first point) 1) (second point)) hash-points))
-	 (p7 (get-hash-point-value (list (+ (first point) 1) (- (second point) 1)) hash-points))
-	 (p8 (get-hash-point-value (list (first point) (- (second point) 1)) hash-points))
-	 (p9 (get-hash-point-value (list (- (first point) 1) (- (second point) 1)) hash-points)))
+  (let 	((p2 (get-hash-point-value (list (first point)  (1- (second point))) hash-points))
+	 (p3 (get-hash-point-value (list (1+ (first point))  (1- (second point))) hash-points))
+	 (p4 (get-hash-point-value (list (1+ (first point)) (second point)) hash-points))
+	 (p5 (get-hash-point-value (list (1+ (first point)) (1+ (second point))) hash-points))
+	 (p6 (get-hash-point-value (list (first point) (1+ (second point))) hash-points))
+	 (p7 (get-hash-point-value (list (1- (first point)) (1+ (second point))) hash-points))
+	 (p8 (get-hash-point-value (list (1- (first point)) (second point)) hash-points))
+	 (p9 (get-hash-point-value (list (1- (first point)) (1- (second point))) hash-points)))
     (list p2 p3 p4 p5 p6 p7 p8 p9)))
+
+(defun get-list-neibhours (point)
+  "Returns list of all neibhour point coordinates in order p2... p9 (see get-neibhour-points).
+   Example:
+   point = '(3 7)
+   (2 6)  (3 6)  (4 6)
+   (2 7)  (3 7)  (4 7)
+   (2 8)  (3 8)  (4 8)
+   will return '((3 6) (4 6) (4 7) (4 8) (3 8) (2 8) (2 7) (2 6))
+"
+  (list (list (first point)  (1- (second point)))
+	(list (1+ (first point))  (1- (second point)))
+	(list (1+ (first point)) (second point))
+	(list (1+ (first point)) (1+ (second point)))
+	(list (first point) (1+ (second point)))
+	(list (1- (first point)) (1+ (second point)))
+	(list (1- (first point)) (second point))
+	(list (1- (first point)) (1- (second point)))))
+
+(defun get-neibhour-active-points (point hash-points)
+  "Return list with neibhours coordinates.
+   Sample:
+   p1 = '(3 3)
+
+   0  0  0
+   0  1  1
+   0  1  0
+   will return '((4 3) (3 4))
+"
+  (let ((neibhours nil))
+    (dolist (p (get-list-neibhours point))
+      (when (in-hash p hash-points)
+	(push p neibhours)))
+    neibhours))
 
 ;; DEBUG function
 (defun pprint-point-neibs (point hash-points)
@@ -165,4 +215,27 @@ Example:
 	   (equal points '(0 0 0 0 1 0 1 0))))
      (>= sum 3))))
 
+(defun rad-to-degree (value)
+  "Convert radians to degrees."
+  (/ (* 180 value) pi))
 
+(defun degree-to-rad (value)
+  "Convert degrees to radians."
+  (/ (* pi value) 180))
+
+;; (defun get-other-line-point (line point)
+;;   "Return another line point."
+;;   (cond
+;;     ((equal point (first line)) (second line))
+;;     ((equal point (second line)) (first line))
+;;     (t
+;;      (error "Point not belong to line"))))
+
+(defun remove-hash-lines-duplecates (hash-lines)
+  "Remove duplecate key entries, points to one line."
+  (let (line)
+    (loop for point being the hash-key of hash-lines do
+	 (setf line (gethash point hash-lines nil))
+	 (when (line? line)
+	   (remhash (second line) hash-lines)))
+    hash-lines))

@@ -28,7 +28,7 @@
 ;; Formating
 ;;------------------------------------------------------------------------------
 ;; format sizes
-(defconstant version "0.1.3")
+(defconstant version "0.1.3.5")
 
 (defvar +a0+ '(841 1189))
 (defvar +a0-landscape+ '(1189 841))
@@ -45,7 +45,8 @@
 (defconstant +inch+ 25.4)
 (defconstant +error-in-quess+ 0.15)
 (defconstant +min-dpi+ 200.0)
-
+(defconstant +max-angle-on-line+ 15)
+(defconstant +max-screw-angle+ 5)
 ;;------------------------------------------------------------------------------
 ;; some useful constants here
 (defconstant +null+ (code-char 0))
