@@ -10,7 +10,7 @@
   :author "Kirill Temnov <allselead@gmail.com>"
   :maintainer "Kirill Temnov <allselead@gmail.com>"
   :description "Vectorizer for raster images"
-  :long-description "Vectorizer for raster images. Can save result to dxf,"
+  :long-description "Vectorizer for raster images. Can save result to dxf or svg."
   :components ((:module "src"
 			:components ((:file "packages")
 				     (:file "helpers" :depends-on ("packages"))
