@@ -84,6 +84,8 @@ TODO Add default values.
 	 (h (png:image-height image))
 	 (ht (thin-image-hash (image-to-hashtable image)))
 	 lines-ht)
+    ;; 
+    (save-image (hashtable-to-image ht w h) (get-out-path outfile))
     (format t "vectorize ... ~%" )
     (setf lines-ht (vectorize-hash ht))
     ;; (format t "megre lines ... ~%")
@@ -92,7 +94,6 @@ TODO Add default values.
     (format t "export to svg ... ~%")
     ;;
     (save-hashtable-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))
-    (save-image (hashtable-to-image ht w h) (get-out-path outfile))
     lines-ht))
 
 (defun guess-format (image-path)

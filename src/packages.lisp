@@ -46,7 +46,8 @@
 (defconstant +error-in-quess+ 0.15)
 (defconstant +min-dpi+ 200.0)
 (defconstant +max-angle-on-line+ 15)
-(defconstant +max-screw-angle+ 5)
+(defconstant +min-angle-on-line+ 5)
+(defconstant +max-slope-angle+ 5)
 ;;------------------------------------------------------------------------------
 ;; some useful constants here
 (defconstant +null+ (code-char 0))

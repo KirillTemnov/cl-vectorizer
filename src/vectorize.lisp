@@ -27,6 +27,7 @@
 (defun line? (object)
   "Return T if object can be a line representation, otherwise returns nil."
   (cond
+    ((atom object) nil)
     ((and
       (eq 3 (length object))
       (listp (first object))
@@ -121,6 +122,32 @@
       (format t "Result: ~a~%~%" result))
     result))
 
+(defun substitute-angles (an1 an2)
+  "Return absolute difference between two angles in degrees."
+  (let ((result (abs (- an1 an2))))
+    (cond
+      ((> result 180) (- 360 result))
+      (t result))))
+
+(defun point-belong-to-line? (point start-line-point end-line-point tilt-angle)
+  "Check if point could belong to line."
+  (let ((distance (get-points-distance start-line-point end-line-point))
+	 (new-tilt (get-tilt-angle (list start-line-point point))))
+    (> +max-angle-on-line+ (substitute-angles tilt-angle new-tilt)))) ; 15 degrees 
+    ;; (cond
+    ;;   ((and
+    ;; 	(> 1400 distance)
+    ;; 	(> +max-angle-on-line+  (substitute-angles new-tilt tilt-angle))) t)
+    ;;   (t nil))))
+    ;;   ((and
+    ;;   	(> 5 distance)
+    ;;   	(> +max-angle-on-line+  (substitute-angles new-tilt tilt-angle))) t)
+    ;;   ((and
+    ;;   	(> 50 distance)
+    ;;   	(> +min-angle-on-line+ (substitute-angles new-tilt tilt-angle)) t))
+    ;;   ((= 0  (substitute-angles new-tilt tilt-angle)) t)
+    ;;   (t nil))))
+       
 (defun find-end-of-line (point hash-points &key (start-point nil) (tilt-angle nil))
   "Searches end of line in hash-points."
   (let* ((active-points (get-neibhour-active-points point hash-points)))
@@ -147,11 +174,18 @@
 	       (find-end-of-line end hash-points :start-point point :tilt-angle tilt-angle)))))
 
       (t				; read next point of line
-       (let* ((end-point (first active-points))
-	      (new-tilt-angle (get-tilt-angle (list start-point end-point))))
-	 (if (> +max-angle-on-line+ (abs (- tilt-angle new-tilt-angle))) ; 15 degrees max
-	     (find-end-of-line end-point hash-points :start-point start-point :tilt-angle tilt-angle)
-	     (make-line start-point point )))))))
+       (let  ((end-point (first active-points)))
+	      (if (point-belong-to-line? point start-point end-point tilt-angle)
+		  (find-end-of-line end-point hash-points :start-point start-point :tilt-angle tilt-angle)
+		  (progn
+		    (make-line start-point end-point)
+		    (setf (gethash point hash-points) 1))))))))
+
+       ;; (let* ((end-point (first active-points))
+       ;; 	      (new-tilt-angle (get-tilt-angle (list start-point end-point))))
+       ;; 	 (if (> +max-angle-on-line+ (abs (- tilt-angle new-tilt-angle))) ; 15 degrees max
+       ;; 	     (find-end-of-line end-point hash-points :start-point start-point :tilt-angle tilt-angle)
+       ;; 	     (make-line start-point point )))))))
 
 (defun point-have-one-neibhour? (point hash-points)
   "Returns T if point have only one neibhour."
@@ -161,25 +195,27 @@
   "Vectorize hash with points and return hash, consists of lines (as keys)."
   (let ((hash-lines (make-hash-table :test 'equal ))
 	(line nil))
-    (loop for point being the hash-key of hash-points do
-	 (when (point-have-one-neibhour? point hash-points)
-	   (progn
-	     (setf line (find-end-of-line point hash-points))
-	     (when (line? line)
-	       ;; (progn
-		;;(print-line line)
-		(setf (gethash (first line) hash-lines) line)	;start point
-		(setf (gethash (second line) hash-lines) line)) ;end point
-	       )))
+    (loop while (< 0 (hash-table-count hash-points)) do
+	 (loop for point being the hash-key of hash-points do
+	      (when (point-have-one-neibhour? point hash-points)
+		(progn
+		  (setf line (find-end-of-line point hash-points))
+		  (when (line? line)
+		    ;; (progn
+		    ;;(print-line line)
+		    (setf (gethash (first line) hash-lines) line)	;start point
+		    (setf (gethash (second line) hash-lines) line)) ;end point
+		  )))
+	 (format t "hash points: ~a~%" hash-points))
     hash-lines))
 
 ;write better
-(defun skrew-match? (line1 line2)
+(defun slope-match? (line1 line2)
   "Returns T if screw of two lines match and nil otherwise."
   (let ((angle1 (get-tilt-angle line1))
 	(angle2 (get-tilt-angle line2)))
     (cond
-      ((>= +max-screw-angle+ (abs (- angle1 angle2))) t)
+      ((>= +max-slope-angle+ (abs (- angle1 angle2))) t)
       (t nil))))
 
 (defun merge-near-lines (line-hash &key (radius 3))
@@ -211,7 +247,7 @@
 	     (when (and 
 		    (not (eq nil cur-line))
 		    (not (equal key-line cur-line))
-		    (skrew-match? key-line cur-line))
+		    (slope-match? key-line cur-line))
 	       ;; (format t "merge lines: ~%Line1 = ~a~%Line2 = ~a~%~%" 
 	       ;; 	       (get-line-string key-line)
 	       ;; 	       (get-line-string cur-line))
