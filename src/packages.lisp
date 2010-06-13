@@ -28,7 +28,7 @@
 ;; Formating
 ;;------------------------------------------------------------------------------
 ;; format sizes
-(defconstant version "0.1.3.5")
+(defconstant version "0.1.4")
 
 (defvar +a0+ '(841 1189))
 (defvar +a0-landscape+ '(1189 841))
