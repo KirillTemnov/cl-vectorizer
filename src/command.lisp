@@ -71,7 +71,7 @@ Converted files moved to output folder.
 	 (image-sizes (cut-image-sizes  (getf info :width) (getf info :height) +sheet-width+ +sheet-height+)))
     (dolist (image-size image-sizes)
       (convert-image source-filename 
-		     :dest-filename (format nil "~a-~a" (first image-sizes) source-filename)
+		     :dest-filename (format nil "~a-~a" (first image-size) source-filename)
 		     :options   (list "-crop"
 				      (format nil "~ax~a+~a+~a" +sheet-width+ +sheet-height+ (first (second image-size)) (second (second image-size))))))))
 	 
