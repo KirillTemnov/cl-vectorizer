@@ -30,7 +30,7 @@
 ;; Formating
 ;;------------------------------------------------------------------------------
 ;; format sizes
-(defconstant version "0.1.4")
+(defconstant version "0.1.4.1")
 
 (defconstant +a0+ '(841 1189))
 (defconstant +a0-landscape+ '(1189 841))

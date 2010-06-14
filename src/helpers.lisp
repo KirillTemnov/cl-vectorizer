@@ -80,7 +80,24 @@ Example:
 
 (defun change-filename (filename new-filename)
   "Change name of file and keep extension"
-  (make-pathname :name new-filename :type (pathname-type filename)))
+  (make-pathname :name new-filename 
+		 :type (pathname-type filename) 
+		 :directory (pathname-directory filename)))
+
+(defun add-to-filename (filename add-symbols)
+  "Add `add-symbols` value to filename
+
+Example:
+> (add-to-filename #p"/tmp/test.txt" 5)
+
+  #P/tmp/test5.txt
+"
+  (make-pathname :name (format nil "~a~a" (pathname-name filename) add-symbols)
+		 :type (pathname-type filename) 
+		 :directory (pathname-directory filename)))
+		 
+
+(pathname-directory  #p"/tmp/test.txt" )
 
 (defun load-image (path)
   "Load image from file"
