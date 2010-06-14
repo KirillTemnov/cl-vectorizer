@@ -103,6 +103,7 @@
 (setf (getf *settings* :identify) 
       (cond
 	((probe-file #p"/usr/local/bin/identify")  #p"/usr/local/bin/identify")
+	((probe-file #p"/opt/local/bin/identify")  #p"/opt/local/bin/identify")
 	((probe-file #p"/usr/bin/identify") #p"/usr/bin/identify")
 	(t nil)))
 		     
