@@ -70,6 +70,7 @@ Converted files moved to output folder.
   (let* ((info (get-image-info (namestring (get-in-path source-filename))))
 	 (image-sizes (cut-image-sizes  (getf info :width) (getf info :height) +sheet-width+ +sheet-height+)))
     (dolist (image-size image-sizes)
+      (format t "out file = ~a~%" (format nil "~a-~a" (first image-size) source-filename))
       (convert-image source-filename 
 		     :dest-filename (format nil "~a-~a" (first image-size) source-filename)
 		     :options   (list "-crop"
