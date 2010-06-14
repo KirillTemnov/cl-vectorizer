@@ -2,11 +2,11 @@
 (in-package #:cl-vectorizer)
 
 (defun run-command (command &key (arguments nil) (input nil) (output t))
-  "run shell command. system path to command must be full."
+  "Run shell command. system path to command must be full."
   (sb-ext:run-program command arguments :input input :output output))
 
 (defun run-command-return-output (command &key (arguments nil) (input nil))
-  "run shell command and return it's ousput as a tokens string"
+  "Run shell command and return it's ousput as a tokens string."
   (let ((results-list nil))
     (with-open-stream (out 
 		       (sb-ext:process-output 
@@ -17,12 +17,12 @@
     results-list))
 
 (defun get-image-info (path)
-  "get information about image. 
-return plist (:width int-value :height int-value 
-              :xresolution int-value :yresolution int-value)
+  "Get information about image. 
+
+Return plist:
+  (:width int-value :height int-value :xresolution int-value :yresolution int-value)
 Resolution is in DPI"
   (let* ((image-plist nil) 
-	 ;; prevent output with (first (last ...))
 	(str-data (first (last (run-command-return-output (get-identify-path) :arguments (list "-format" "'%[width] %[height] %[xresolution] %[yresolution]'" path)))))
 	(str-data-formated (str-list-to-int-list (subseq str-data 1 (- (length str-data) 1)))))
     (setf (getf image-plist :width) (first str-data-formated))
@@ -30,6 +30,51 @@ Resolution is in DPI"
     (setf (getf image-plist :xresolution) (third str-data-formated))
     (setf (getf image-plist :yresolution) (fourth str-data-formated))
     image-plist))
+
+(defun cut-image-sizes (width height crop-width crop-heigth)
+  "Get image sizes for crop operation. Returns a list, containing sublists like
+ (crop-num (offset-x offset-y)), where crop-num - number of croping part, offset-x and offset-y
+ - offsets from left up corner of source image.
+
+Examples:
+>(cut-image-sizes 800 600 200 100)
+
+ ((0 (0 0)) (1 (200 0)) (2 (400 0)) (3 (600 0)) (4 (200 100)) (5 (400 100))
+ (6 (600 100)) (7 (200 200)) (8 (400 200)) (9 (600 200)) (10 (200 300))
+ (11 (400 300)) (12 (600 300)) (13 (200 400)) (14 (400 400)) (15 (600 400))
+ (16 (200 500)) (17 (400 500)) (18 (600 500)))
+
+> (cut-image-sizes 800 600 1000 1000)
+ 
+ ((0 (0 0)))
+"
+  (let ((crop-list '((0 (0 0)))))
+    (let ((times-x (floor (/ width crop-width)))
+	  (times-y (floor (/ height crop-heigth)))
+	  (i 0) l (y 0))
+      (when (= (rem width crop-width) 0) (decf times-x))
+      (when (= (rem height crop-heigth) 0) (decf times-y))
+      (loop 
+	 (when (> y times-y) (return crop-list))
+	 (setf l (loop for x from 1 to times-x collecting 
+		      (list (+ x i) (list (* crop-width x) (* y crop-heigth)))))
+	 (incf i times-x)
+	 (setf crop-list (append crop-list l))
+	 (incf y)))))
+
+
+(defun split-image (source-filename)
+  "Split image to samller parts fized size (+sheet-width+ and +sheet-height+).
+Converted files moved to output folder.
+"
+  (let* ((info (get-image-info (namestring (get-in-path image-name))))
+	 (images-sizes (cut-image-sizes  (getf info :width) (getf info :height) +sheet-width+ +sheet-height+)))
+    (dolist (image-size image-sizes)
+      (convert-image source-filename 
+		     :dest-filename (format nil "~a-~a" (first image-sizes) source-filename)
+		     :options   (list "-crop"
+				      (format nil "~ax~a+~a+~a" +sheet-width+ +sheet-height+ (first (second image-size)) (second (second image-size))))))))
+	 
 
 (defun convert-image (source-filename  &key (dest-filename source-filename) options)
   "Convert one image to anther via imagemagick.
@@ -88,9 +133,7 @@ TODO Add default values.
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
     (format t "vectorize ... ~%" )
     (setf lines-ht (vectorize-hash ht))
-    ;; (format t "megre lines ... ~%")
-    ;; (remove-hash-lines-duplecates lines-ht)
-    ;; (setf lines-ht (remove-hash-lines-duplecates (merge-near-lines lines-ht)))
+    
     (format t "export to svg ... ~%")
     ;;
     (save-hashtable-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))

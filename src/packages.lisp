@@ -20,6 +20,8 @@
 	   #:version
 	   #:set-working-dir-in
 	   #:set-working-dir-out
+	   #:+sheet-width+
+	   #:+sheet-height+
    ))
 
 (in-package #:cl-vectorizer)
@@ -30,24 +32,29 @@
 ;; format sizes
 (defconstant version "0.1.4")
 
-(defvar +a0+ '(841 1189))
-(defvar +a0-landscape+ '(1189 841))
-(defvar +a1+ '(594 841))
-(defvar +a1-landscape+ '(841 594))
-(defvar +a2+ '(420 594))
-(defvar +a2-landscape+ '(594 420))
-(defvar +a3+ '(297 420))
-(defvar +a3-landscape+ '(420 297))
-(defvar +a4+ '(210 297))
-(defvar +a4-landscape+ '(297 210))
-(defvar +a5+ '(148 210))
-(defvar +a5-landscape+ '(210 148))
+(defconstant +a0+ '(841 1189))
+(defconstant +a0-landscape+ '(1189 841))
+(defconstant +a1+ '(594 841))
+(defconstant +a1-landscape+ '(841 594))
+(defconstant +a2+ '(420 594))
+(defconstant +a2-landscape+ '(594 420))
+(defconstant +a3+ '(297 420))
+(defconstant +a3-landscape+ '(420 297))
+(defconstant +a4+ '(210 297))
+(defconstant +a4-landscape+ '(297 210))
+(defconstant +a5+ '(148 210))
+(defconstant +a5-landscape+ '(210 148))
 (defconstant +inch+ 25.4)
 (defconstant +error-in-quess+ 0.15)
 (defconstant +min-dpi+ 200.0)
 (defconstant +max-angle-on-line+ 15)
 (defconstant +min-angle-on-line+ 5)
 (defconstant +max-slope-angle+ 5)
+;-------------------------------------------------------------------------------
+;; width and height of cutting sheets
+(defconstant +sheet-width+ 500)
+(defconstant +sheet-height+ 500)
+
 ;;------------------------------------------------------------------------------
 ;; some useful constants here
 (defconstant +null+ (code-char 0))
