@@ -68,7 +68,7 @@ Examples:
 Converted files moved to output folder.
 "
   (let* ((info (get-image-info (namestring (get-in-path source-filename))))
-	 (images-sizes (cut-image-sizes  (getf info :width) (getf info :height) +sheet-width+ +sheet-height+)))
+	 (image-sizes (cut-image-sizes  (getf info :width) (getf info :height) +sheet-width+ +sheet-height+)))
     (dolist (image-size image-sizes)
       (convert-image source-filename 
 		     :dest-filename (format nil "~a-~a" (first image-sizes) source-filename)
