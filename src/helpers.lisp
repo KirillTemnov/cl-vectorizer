@@ -216,11 +216,9 @@ Example:
        p7  p6  p5
 
        Masks:
-       0  1  0    0  1  0    0  0  0    0  0  0
-       1  1  0    0  1  1    0  1  1    1  1  0
-       0  0  0    0  0  0    0  1  0    0  1  0
-   3) Point have 3+ neibhours.
-
+       0  1  0    0  1  0    0  0  0    0  0  0  
+       1  1  0    0  1  1    0  1  1    1  1  0  
+       0  0  0    0  0  0    0  1  0    0  1  0  
    Point should be deleted of one of conditions performed.
 "
   (let* ((points (get-neibhour-points point hash-points))
@@ -232,8 +230,7 @@ Example:
 	   (equal points '(1 0 0 0 0 0 1 0))
 	   (equal points '(1 0 1 0 0 0 0 0))
 	   (equal points '(0 0 1 0 1 0 0 0))
-	   (equal points '(0 0 0 0 1 0 1 0))))
-     (>= sum 3))))
+	   (equal points '(0 0 0 0 1 0 1 0)))))))
 
 (defun rad-to-degree (value)
   "Convert radians to degrees."
