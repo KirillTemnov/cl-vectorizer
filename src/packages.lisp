@@ -19,7 +19,7 @@
 	   #:*settings* 
 	   #:version
 	   #:set-working-dir-in
-	   #:set-working-dir-out
+	   #:set-working-dir-out	   
 	   #:+sheet-width+
 	   #:+sheet-height+
    ))
@@ -29,30 +29,30 @@
 ;;------------------------------------------------------------------------------
 ;; Formating
 ;;------------------------------------------------------------------------------
-(defconstant version "0.1.4.3" "Package version.")
+(defvar version "0.1.4.6" "Package version.")
 ;; format sizes
-(defconstant +a0+ '(841 1189))
-(defconstant +a0-landscape+ '(1189 841))
-(defconstant +a1+ '(594 841))
-(defconstant +a1-landscape+ '(841 594))
-(defconstant +a2+ '(420 594))
-(defconstant +a2-landscape+ '(594 420))
-(defconstant +a3+ '(297 420))
-(defconstant +a3-landscape+ '(420 297))
-(defconstant +a4+ '(210 297))
-(defconstant +a4-landscape+ '(297 210))
-(defconstant +a5+ '(148 210))
-(defconstant +a5-landscape+ '(210 148))
-(defconstant +inch+ 25.4)
-(defconstant +error-in-quess+ 0.15)
-(defconstant +min-dpi+ 200.0)
-(defconstant +max-angle-on-line+ 15)
-(defconstant +min-angle-on-line+ 5)
-(defconstant +max-slope-angle+ 5)
+(defvar +a0+ '(841 1189))
+(defvar +a0-landscape+ '(1189 841))
+(defvar +a1+ '(594 841))
+(defvar +a1-landscape+ '(841 594))
+(defvar +a2+ '(420 594))
+(defvar +a2-landscape+ '(594 420))
+(defvar +a3+ '(297 420))
+(defvar +a3-landscape+ '(420 297))
+(defvar +a4+ '(210 297))
+(defvar +a4-landscape+ '(297 210))
+(defvar +a5+ '(148 210))
+(defvar +a5-landscape+ '(210 148))
+(defvar +inch+ 25.4)
+(defvar +error-in-quess+ 0.15)
+(defvar +min-dpi+ 200.0)
+(defvar +max-angle-on-line+ 15)
+(defvar +min-angle-on-line+ 5)
+(defvar +max-slope-angle+ 5)
 ;-------------------------------------------------------------------------------
 ;; width and height of cutting sheets
-(defconstant +sheet-width+ 500)
-(defconstant +sheet-height+ 500)
+(defvar +sheet-width+ 500)
+(defvar +sheet-height+ 500)
 
 ;;------------------------------------------------------------------------------
 ;; some useful constants here
@@ -112,6 +112,9 @@
 	((probe-file #p"/usr/bin/convert")  #p"/usr/bin/convert")
 	(t nil)))
 
+;; debug flag
+(setf (getf *settings* :debug-mode) nil)
+
 ;; threshold for vectorization
 (setf (getf *settings* :threshold) 20)
 ;; threshold for binarization
@@ -125,23 +128,51 @@
 ;;(defun +identify-path+ nil 
 (defun get-convert-path nil
   (getf *settings* :convert))
-;;(defun +convert-path+ nil 
-(defun get-threshold nil
-  (getf *settings* :threshold))
 
-(defun get-threshold-bin nil
-  (getf *settings* :threshold-bin))
-
-;(defun +threshold+ nil 
 (defun get-temp-png-file nil
+  "Get path of temporary png file."
   (merge-pathnames (getf *settings* :working-dir-out) (getf *settings* :temp-png-filename)))
 
-(defun set-working-dir-in (path)
-  (setf (getf *settings* :working-dir-in) path))
 
-(defun set-working-dir-out (path)
-  (setf (getf *settings* :working-dir-out) path))
 
-(defun get-working-dir-in  () (getf *settings* :working-dir-in))
+(defun concat-atoms (&rest args)
+  "Concatenate atoms as strings.
+Example:
+ (concat-atoms 'a 'b 'c)
 
-(defun get-working-dir-out () (getf *settings* :working-dir-out))
+abc
+"
+  (intern (apply #'(lambda (&rest args) 
+		     (with-output-to-string (s) 
+		       (dolist (a args) (princ a s)))) 
+		 args)))
+
+;; macro for creating set- and get- properties
+(defmacro property (name &key (set-docstring "") (get-docstring ""))
+  `(progn
+     (defun ,(concat-atoms 'set- name) (value)
+       ,set-docstring
+       (setf (getf *settings* ,(intern (symbol-name name) :keyword)) value))
+     (defun ,(concat-atoms 'get- name) nil 
+       ,get-docstring
+       (getf *settings* ,(intern (symbol-name name) :keyword)))))
+
+(property threshold 
+	  :set-docstring "Set threshold for vectorization (int value)."
+	  :get-docstring "Get threshold for vectorization.")
+	  
+(property threshold-bin
+	  :set-docstring "Set threshold for image binarization (string with persent sign)."
+	  :get-docstring "Get threshold for image binarization.")
+
+(property working-dir-in 
+	  :set-docstring "Set working dir for input images."
+	  :get-docstring "Get working dir for input images.")
+
+(property working-dir-out
+	  :set-docstring "Set working dir for output images and data."
+	  :get-docstring "Get working dir for output images and data.")
+
+(property debug-mode
+	  :set-docstring "Set debug-mode. If debug-mode set to t, debug messages prints to stdout."
+	  :get-docstring "Get debug-mode state (t or nil - default).")

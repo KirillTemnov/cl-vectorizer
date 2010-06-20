@@ -206,7 +206,7 @@
 		    (setf (gethash (first line) hash-lines) line)	;start point
 		    (setf (gethash (second line) hash-lines) line)) ;end point
 		  )))
-	 (format t "hash points: ~a~%" hash-points))
+	 (when (get-debug-mode)	 (format t "hash points: ~a~%" hash-points)))
     hash-lines))
 
 ;write better
@@ -261,16 +261,9 @@
 	       (return)))		; get next point from hash-key
 	   (setf (gethash (first key-line) new-lines-hash) key-line)
 	   (setf (gethash (second key-line) new-lines-hash) key-line))
-      (format t "Total ~a lines merged~%" (* 2 total-merged))
+
+      (when (get-debug-mode) (format t "Total ~a lines merged~%" (* 2 total-merged)))
       new-lines-hash)))
-
-;; (defun pprint-test (x y)
-;;   (flet ((my-pprint (a)
-;; 	   (format t "var = ~a~%" a)))
-;;     (my-pprint x)
-;;     (my-pprint y)))
-
-;; (pprint-test 4 "abc")
 
 
 

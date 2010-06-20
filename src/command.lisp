@@ -135,11 +135,13 @@ TODO Add default values.
 	 lines-ht)
     ;; 
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
-    (format t "vectorize ... ~%" )
+
+    (when (get-debug-mode) (format t "vectorize ... ~%" ))
+
     (setf lines-ht (vectorize-hash ht))
     
-    (format t "export to svg ... ~%")
-    ;;
+    (when (get-debug-mode) (format t "export to svg ... ~%"))
+
     (save-hashtable-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))
     lines-ht))
 

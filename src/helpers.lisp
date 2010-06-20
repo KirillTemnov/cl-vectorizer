@@ -192,18 +192,18 @@ Example:
 	(push p neibhours)))
     neibhours))
 
-;; DEBUG function
-(defun pprint-point-neibs (point hash-points)
-  "DEBUG function, prints Point and all it's neibhours."
-  (let 	((p2 (get-hash-point-value (list (- (first point) 1) (second point)) hash-points))
-	 (p3 (get-hash-point-value (list (- (first point) 1) (+ (second point) 1)) hash-points))
-	 (p4 (get-hash-point-value (list (first point) (+ (second point) 1)) hash-points))
-	 (p5 (get-hash-point-value (list (+ (first point) 1) (+ (second point) 1)) hash-points))
-	 (p6 (get-hash-point-value (list (+ (first point) 1) (second point)) hash-points))
-	 (p7 (get-hash-point-value (list (+ (first point) 1) (- (second point) 1)) hash-points))
-	 (p8 (get-hash-point-value (list (first point) (- (second point) 1)) hash-points))
-	 (p9 (get-hash-point-value (list (- (first point) 1) (- (second point) 1)) hash-points)))
-    (format t "~s ~s ~s~%~s 1 ~s~%~s ~s ~s~%" p9 p2 p3 p8 p4 p7 p6 p5)))
+;; DEBUG function -- remove?
+;; (defun pprint-point-neibs (point hash-points)
+;;   "DEBUG function, prints Point and all it's neibhours."
+;;   (let 	((p2 (get-hash-point-value (list (- (first point) 1) (second point)) hash-points))
+;; 	 (p3 (get-hash-point-value (list (- (first point) 1) (+ (second point) 1)) hash-points))
+;; 	 (p4 (get-hash-point-value (list (first point) (+ (second point) 1)) hash-points))
+;; 	 (p5 (get-hash-point-value (list (+ (first point) 1) (+ (second point) 1)) hash-points))
+;; 	 (p6 (get-hash-point-value (list (+ (first point) 1) (second point)) hash-points))
+;; 	 (p7 (get-hash-point-value (list (+ (first point) 1) (- (second point) 1)) hash-points))
+;; 	 (p8 (get-hash-point-value (list (first point) (- (second point) 1)) hash-points))
+;; 	 (p9 (get-hash-point-value (list (- (first point) 1) (- (second point) 1)) hash-points)))
+;;     (format t "~s ~s ~s~%~s 1 ~s~%~s ~s ~s~%" p9 p2 p3 p8 p4 p7 p6 p5)))
 
 (defun should-delete-point (point hash-points)
   "Check if point should be deleted. 
@@ -259,15 +259,3 @@ Example:
 	 (when (line? line)
 	   (remhash (second line) hash-lines)))
     hash-lines))
-
-(defun concat-atoms (&rest args)
-  "Concatenate atoms as strings.
-Example:
- (concat-atoms 'a 'b 'c)
-
-abc
-"
-  (intern (apply #'(lambda (&rest args) 
-		     (with-output-to-string (s) 
-		       (dolist (a args) (princ a s)))) 
-		 args)))
