@@ -5,7 +5,7 @@
 ;;  skeletonization
 ;;------------------------------------------------------------------------------
 (defun A-condition (points)
-  "A condition of Zong Suen operation"
+  "A condition of Zong Suen operation."
   (let ((a 0) ) 
     (dotimes (i 8)
       (if (eq 1 (- (nth (+ i 1) points) (nth i points)))
@@ -14,12 +14,16 @@
 
 
 (defun B-condition (points)
-  "B condition of Zong Suen operation"
+  "B condition of Zong Suen operation. 
+Return sum of `points`."
   (apply '+ points))
 
 
 
 (defun zong-suen-condition (point hash-points order)
+  "Conditions for Zong-Suen method. 
+`order` is 'first for firste condition and 'second for second condition.
+Return t if condition is satisfied, otherwise nil."
   (let* ((p1 (get-hash-point-value point hash-points))
 	 (p2 (get-hash-point-value (list (- (first point) 1) (second point)) hash-points))
 	 (p3 (get-hash-point-value (list (- (first point) 1) (+ (second point) 1)) hash-points))
@@ -45,12 +49,17 @@
 			    (eq 0 (apply '* (list p2 p6 p8)))))))))
 
 (defun zong-suen-first-condition (point hash-points)
+  "First condition of Zong-Suen method.
+Return t if condition is satisfied, otherwise nil."
   (zong-suen-condition point hash-points 'first))
 
 (defun zong-suen-second-condition (point hash-points)
+  "Second condition of Zong-Suen method.
+Return t if condition is satisfied, otherwise nil."
   (zong-suen-condition point hash-points 'second))
 
 (defun thin-image-hash (hash-points)
+  "Thin image and return hash table, containing points as a key and +black+ as value."
   (let ((deleted 0)
 	(deleted1 0)
 	(deleted2 0)

@@ -76,7 +76,9 @@ Example:
   (change-extension #p\"test-file.name\" \"ext\")
   -> #p\"test-file.ext\"
 "
-  (make-pathname :name (pathname-name filename) :type new-extension))
+  (make-pathname :name (pathname-name filename)
+		 :type new-extension
+		 :directory (pathname-directory filename)))
 
 (defun change-filename (filename new-filename)
   "Change name of file and keep extension"
@@ -88,7 +90,7 @@ Example:
   "Add `add-symbols` value to filename
 
 Example:
-> (add-to-filename #p"/tmp/test.txt" 5)
+> (add-to-filename #p\"/tmp/test.txt\" 5)
 
   #P/tmp/test5.txt
 "

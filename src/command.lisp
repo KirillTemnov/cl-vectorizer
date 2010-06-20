@@ -18,6 +18,7 @@
 
 (defun get-image-info (path)
   "Get information about image. 
+ `path` is a full path to image.
 
 Return plist:
   (:width int-value :height int-value :xresolution int-value :yresolution int-value)
@@ -71,7 +72,10 @@ Converted files moved to output folder.
 	 (image-sizes (cut-image-sizes  (getf info :width) (getf info :height) +sheet-width+ +sheet-height+)))
     (dolist (image-size image-sizes)
       (convert-image source-filename 
-		     :dest-filename (change-extension (add-to-filename source-filename (first image-size) "png"))
+		     :dest-filename 
+		     (change-extension 
+		      (add-to-filename source-filename 
+				       (format nil "-~a" (first image-size))) "png")
 		     :options   (list "-crop"
 				      (format nil "~ax~a+~a+~a" +sheet-width+ +sheet-height+ (first (second image-size)) (second (second image-size))))))))
 	 
@@ -122,7 +126,7 @@ TODO Add default values.
     
 
 (defun thin-image-file (infile &key (outfile (change-extension infile "png")))
-  "Thin image in one file and save to another"
+  "Thin image in one file and save to another."
   (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
 	 (image (load-image image-path))
 	 (w (png:image-width image))
@@ -140,7 +144,7 @@ TODO Add default values.
     lines-ht))
 
 (defun guess-format (image-path)
-  "return format of image based on it's DPI.
+  "Return format of image based on it's DPI.
 list of formats: 'A0 'A1 'A2 'A3 'A4 'A5 'A6 'A7"
   (guess-format-by-info (get-image-info image-path)))
 

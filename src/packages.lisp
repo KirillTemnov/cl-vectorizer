@@ -29,9 +29,8 @@
 ;;------------------------------------------------------------------------------
 ;; Formating
 ;;------------------------------------------------------------------------------
+(defconstant version "0.1.4.3" "Package version.")
 ;; format sizes
-(defconstant version "0.1.4.1")
-
 (defconstant +a0+ '(841 1189))
 (defconstant +a0-landscape+ '(1189 841))
 (defconstant +a1+ '(594 841))
@@ -142,3 +141,7 @@
 
 (defun set-working-dir-out (path)
   (setf (getf *settings* :working-dir-out) path))
+
+(defun get-working-dir-in  () (getf *settings* :working-dir-in))
+
+(defun get-working-dir-out () (getf *settings* :working-dir-out))
