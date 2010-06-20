@@ -3,7 +3,8 @@
 
 (defun print-hash (hash)
   "print hash table keys and values"
-  (maphash #'(lambda (key value)  (format t "The value associated with the key ~S is ~S~%" key value)) hash))
+  (maphash #'(lambda (key value)  (format t "The value associated with the key ~S is ~S~%" key value))
+ hash))
 
 
 (defun tokenize (string)
@@ -258,3 +259,15 @@ Example:
 	 (when (line? line)
 	   (remhash (second line) hash-lines)))
     hash-lines))
+
+(defun concat-atoms (&rest args)
+  "Concatenate atoms as strings.
+Example:
+ (concat-atoms 'a 'b 'c)
+
+abc
+"
+  (intern (apply #'(lambda (&rest args) 
+		     (with-output-to-string (s) 
+		       (dolist (a args) (princ a s)))) 
+		 args)))
