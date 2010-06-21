@@ -10,7 +10,7 @@
 
 Скачать исходники в каталог, потом выполнить команду.
 
-  .. code-block:: ruby
+  .. code-block:: 
      $ sbcl --eval "(require 'asdf)" --eval "(require 'asdf-install)" \
           --eval "(asdf-install:install \"cl-vectorizer.tar.gz\")" --eval "(quit)"
 
