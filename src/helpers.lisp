@@ -248,11 +248,11 @@ Example:
 ;;     (t
 ;;      (error "Point not belong to line"))))
 
-(defun remove-hash-lines-duplecates (hash-lines)
-  "Remove duplecate key entries, points to one line."
-  (let (line)
-    (loop for point being the hash-key of hash-lines do
-	 (setf line (gethash point hash-lines nil))
-	 (when (line? line)
-	   (remhash (second line) hash-lines)))
-    hash-lines))
+;; (defun remove-hash-lines-duplicates (hash-lines)
+;;   "Remove duplicate key entries, points to one line."
+;;   (let (line)
+;;     (loop for point being the hash-key of hash-lines do
+;; 	 (setf line (gethash point hash-lines nil))
+;; 	 (when (line? line)
+;; 	   (remhash (second line) hash-lines)))
+;;     hash-lines))

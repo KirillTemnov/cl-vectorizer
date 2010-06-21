@@ -102,14 +102,17 @@ Return t if condition is satisfied, otherwise nil."
 	  (loop while (< 0 deleted) do
 	       (progn
 		 (setf deleted 0)
-		 (when (get-debug-mode)
-		   (format t "-------------new delete -------------~%"))
+		 (when (get-debug-mode) (format t "-------------new delete -------------~%"))
+
 		 (loop for point being the hash-key of hash-points do
 		      (when (should-delete-point point hash-points)
 			(progn 
+			  (when (get-debug-mode)(format t "deleting point ~a~%" point))
+
 			  (incf deleted)
 			  (remhash point hash-points))))
-		 (when (get-debug-mode)
-		   (format t "~a points deleted~%" deleted))))
+
+		 (when (get-debug-mode)(format t "~a points deleted~%" deleted))))
+
 	  hash-points))))
  

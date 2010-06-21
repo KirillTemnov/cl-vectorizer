@@ -133,12 +133,13 @@ TODO Add default values.
 	 (h (png:image-height image))
 	 (ht (thin-image-hash (image-to-hashtable image)))
 	 lines-ht)
-    ;; 
+    (when (get-debug-mode) (format t "format image ~a ... ~%"  (get-out-path outfile)))
+
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
 
     (when (get-debug-mode) (format t "vectorize ... ~%" ))
 
-    (setf lines-ht (vectorize-hash ht))
+    (setf lines-ht (merge-near-lines (vectorize-hash ht)))
     
     (when (get-debug-mode) (format t "export to svg ... ~%"))
 

@@ -160,18 +160,22 @@
 
       ((eq nil start-point)		; begin of line
        (let ((cur-point nil))		; read next 2 points and make recursive call
-	 (dotimes (i 3) 		;
-	   (setf cur-point (first active-points))
-	   (remhash cur-point hash-points)
-	   (setf active-points (get-neibhour-active-points cur-point hash-points))
-	   (when (= 0 (length active-points))
-	     (return)))
-	 (if (= 0 (length active-points)) 
-	     nil
-	     (let* ((end (first active-points))
-		   (start point)
-		   (tilt-angle (get-tilt-angle (list start end))))
-	       (find-end-of-line end hash-points :start-point point :tilt-angle tilt-angle)))))
+
+	 (if  (>= 3 (length active-points))
+	      nil				; if line shorter than 3 points return nil
+	      (progn
+		(dotimes (i 3)
+		  (setf cur-point (first active-points))
+		  (remhash cur-point hash-points)
+		  (setf active-points (get-neibhour-active-points cur-point hash-points))
+		  (when (= 0 (length active-points))
+		    (return)))
+		(if (= 0 (length active-points))
+		    nil
+		    (let* ((end (first active-points))
+			   (start point)
+			   (tilt-angle (get-tilt-angle (list start end))))
+		      (find-end-of-line end hash-points :start-point point :tilt-angle tilt-angle)))))))
 
       (t				; read next point of line
        (let  ((end-point (first active-points)))
@@ -194,13 +198,18 @@
 (defun vectorize-hash (hash-points)
   "Vectorize hash with points and return hash, consists of lines (as keys)."
   (let ((hash-lines (make-hash-table :test 'equal ))
-	(line nil))
-    (loop while (< 0 (hash-table-count hash-points)) do
+	(line nil) (hash-len (1+ (hash-table-count hash-points))))
+    (loop while (and (> hash-len (hash-table-count hash-points)) (< 0 (hash-table-count hash-points))) do
+	 (setf hash-len (hash-table-count hash-points))
+
 	 (loop for point being the hash-key of hash-points do
 	      (when (point-have-one-neibhour? point hash-points)
 		(progn
 		  (setf line (find-end-of-line point hash-points))
+		  (when (and (not (line? line)) (get-debug-mode))
+		    (format t "point = ~a    line = ~a~%" point line))
 		  (when (line? line)
+		    (when (get-debug-mode) (format t "add line ") (print-line line))
 		    ;; (progn
 		    ;;(print-line line)
 		    (setf (gethash (first line) hash-lines) line)	;start point
@@ -219,7 +228,7 @@
       (t nil))))
 
 (defun merge-near-lines (line-hash &key (radius 3))
-  "Find near lines and megre them. Returns new hash with lines."
+  "Find near lines and merge them. Returns new hash with lines."
   (flet ((get-points (point radius)
 	   (let ((x (first point))
 		 (y (second point))
