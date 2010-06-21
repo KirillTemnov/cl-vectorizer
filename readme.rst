@@ -3,6 +3,19 @@
 
 Обработка изображения производится с помощью пакета imagemagick.
 
+
+
+Установка через asdf
+--------------------
+
+Скачать исходники в каталог, потом выполнить команду.
+
+.. code-block:: shell
+
+   $ sbcl --eval "(require 'asdf)" --eval "(require 'asdf-install)" \
+          --eval "(asdf-install:install \"cl-vectorizer.tar.gz\")" --eval "(quit)"
+
+
 Пример работы
 -------------
 
