@@ -10,7 +10,7 @@
 
 Скачать исходники в каталог, потом выполнить команду.
 
-.. code-block:: shell
+.. code-block:: 
 
    $ sbcl --eval "(require 'asdf)" --eval "(require 'asdf-install)" \
           --eval "(asdf-install:install \"cl-vectorizer.tar.gz\")" --eval "(quit)"
@@ -19,7 +19,7 @@
 Пример работы
 -------------
 
-.. code-block:: common-lisp
+.. code-block:: 
 
     (require 'asdf)
     (require 'cl-vectorizer)
