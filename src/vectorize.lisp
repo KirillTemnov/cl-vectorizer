@@ -40,6 +40,7 @@
 (defun make-line (p1 p2)
   "Create line which starts from left (0) to right (infinity)"
   (cond
+    ((> 3 (get-points-distance p1 p2)) nil)
     ((< (first p1) (first p2)) (list p1 p2 (get-points-distance p1 p2)))
     (t (list p2 p1 (get-points-distance p1 p2)))))
 
@@ -128,7 +129,7 @@
 	     (t
 	      (progn
 		(push point line)
-		(find-end-of-line (first active-points) :line line)))))
+		(find-end-of-line (first active-points) hash-points :line line :tilt-angle tilt-angle)))))
 
       ((=  0 (length active-points))		; end of line
        (progn
@@ -147,13 +148,13 @@
 	 (push point line)
 	 (when (= 3 (length line))
 	   (tilt-angle (get-tilt-angle (list start-point point))))
-	 (find-end-of-line (first active-points) :line line :tilt-angle tilt-angle)))
+	 (find-end-of-line (first active-points) hash-points :line line :tilt-angle tilt-angle)))
       
       (t				; line length > 3 point
 	 (if (point-belong-to-line? point start-point (first line) tilt-angle)
 	     (progn
 	       (push point line)
-	       (find-end-of-line (first active-points) :line line :tilt-angle tilt-angle))
+	       (find-end-of-line (first active-points) hash-points :line line :tilt-angle tilt-angle))
 
 	     (progn
 	       (remove-list-element-from-hash line hash-points)
