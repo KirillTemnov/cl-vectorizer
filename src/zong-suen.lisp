@@ -61,41 +61,39 @@ Return t if condition is satisfied, otherwise nil."
 (defun thin-image-hash (hash-points)
   "Thin image and return hash table, containing points as a key and +black+ as value."
   (let ((deleted 0)
-	(deleted1 0)
-	(deleted2 0)
 	(ht (make-hash-table :test 'equal :size (round (* (hash-table-size hash-points) .7)))))
+    ;; first condition
     (loop for point being the hash-key of hash-points do
 	 (if (zong-suen-first-condition point hash-points)
 	       (setf (gethash point ht) +black+)))
+
     (loop for point-to-remove being the hash-key of ht do
 	 (remhash point-to-remove hash-points))
+
+    (when (get-debug-mode) (format t "first iteration. deleted ~d points ~%" deleted))
+
     (setf deleted (hash-table-count ht))
     (clrhash ht)
 
-    (when (get-debug-mode)
-      (format t "first iteration. deleted ~d points ~%" deleted))
-
+    ;; second condition
     (loop for point being the hash-key of hash-points do
 	 (if (zong-suen-second-condition point hash-points)
 	     (progn 
-	       (setf (gethash point ht) +black+)
-	       (incf deleted2 ))))
+	       (setf (gethash point ht) +black+))))
     
     (loop for point-to-remove being the hash-key of ht do
 	 (remhash point-to-remove hash-points))
     
+
+    (when (get-debug-mode) (format t "second iteration. deleted ~d points ~%"  (hash-table-count ht)))
+
     (setf deleted (+ deleted (hash-table-count ht)))
-    (clrhash ht)    
-
-    (when (get-debug-mode)
-      (format t "second iteration. deleted ~d points ~%" (hash-table-count ht)))
+    (clrhash ht)
 
 
-
-    (if (< 0 (+ deleted1 deleted2))
+    (if (< 0 deleted)
 	(progn
-	  (when (get-debug-mode)
-	    (format t "thinning more ... ~%------------------------------------------------------------~%"  ))
+	  (when (get-debug-mode) (format t "thinning more ... ~%------------------------------------------------------------~%"  ))
 	  (thin-image-hash hash-points))
 	(progn
 	  (setf deleted 1)
@@ -105,12 +103,16 @@ Return t if condition is satisfied, otherwise nil."
 		 (when (get-debug-mode) (format t "-------------new delete -------------~%"))
 
 		 (loop for point being the hash-key of hash-points do
-		      (when (should-delete-point point hash-points)
-			(progn 
-			  (when (get-debug-mode)(format t "deleting point ~a~%" point))
+		      (progn
+			(when (get-debug-mode)
+			  (format t "point ~a [~a] (sum = ~a)~%" point (get-neibhour-points point hash-points) (apply #'+  (get-neibhour-points point hash-points))))
+		      (when (should-delete-point? point hash-points)
+			  (progn 
+			    (when (get-debug-mode)(format t "deleting point ~a [~a]~%" point (get-neibhour-points point hash-points)))
 
-			  (incf deleted)
-			  (remhash point hash-points))))
+			    (incf deleted)			  
+			    (remhash point hash-points)))))
+			  ;; (when (get-debug-mode) (format t "POINT ~a IS NOT DELETED [~a]~%" point (get-neibhour-points point hash-points)))))
 
 		 (when (get-debug-mode)(format t "~a points deleted~%" deleted))))
 

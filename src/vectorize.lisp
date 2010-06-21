@@ -40,7 +40,7 @@
 (defun make-line (p1 p2)
   "Create line which starts from left (0) to right (infinity)"
   (cond
-    ((> 3 (get-points-distance p1 p2)) nil)
+;;    ((> 2 (get-points-distance p1 p2)) nil)
     ((< (first p1) (first p2)) (list p1 p2 (get-points-distance p1 p2)))
     (t (list p2 p1 (get-points-distance p1 p2)))))
 
@@ -60,6 +60,7 @@
 (defun compare-points (x y)
   "Compare two points, point less if it plased from left and(or) above another point."
   (cond 
+    ((or (not (listp x)) (not (listp y))) nil)
     ((eq (first x) (first y))
      (> (second x) (second y)))
     (t
@@ -84,9 +85,10 @@
        (start (first points))
        (end (fourth points))
       (result (make-line start end)))
-    (when  (< (third result) (+ (third line1) (third line2)))
-      (format t "Merge lines ~a and ~a~%" (get-line-string line1) (get-line-string line2))
-      (format t "Result: ~a~%~%" result))
+    (when (get-debug-mode)
+      (when  (< (third result) (+ (third line1) (third line2)))
+	(format t "Merge lines ~a and ~a~%" (get-line-string line1) (get-line-string line2))
+	(format t "Result: ~a~%" result)))
     result))
 
 (defun substitute-angles (an1 an2)
@@ -147,7 +149,7 @@
        (progn
 	 (push point line)
 	 (when (= 3 (length line))
-	   (tilt-angle (get-tilt-angle (list start-point point))))
+	   (setf tilt-angle (get-tilt-angle (list start-point point))))
 	 (find-end-of-line (first active-points) hash-points :line line :tilt-angle tilt-angle)))
       
       (t				; line length > 3 point
@@ -172,18 +174,18 @@
 	 (setf hash-len (hash-table-count hash-points))
 
 	 (loop for point being the hash-key of hash-points do
-	      (when (point-have-one-neibhour? point hash-points)
-		(progn
-		  (setf line (find-end-of-line point hash-points))
-		  (when (and (not (line? line)) (get-debug-mode))
-		    (format t "point = ~a    line = ~a~%" point line))
-		  (when (line? line)
-		    (when (get-debug-mode) (format t "add line ") (print-line line))
-		    ;; (progn
-		    ;;(print-line line)
-		    (setf (gethash (first line) hash-lines) line)	;start point
-		    (setf (gethash (second line) hash-lines) line)) ;end point
-		  )))
+	      ;; (when (point-have-one-neibhour? point hash-points)
+	      ;; 	(progn
+	      (setf line (find-end-of-line point hash-points))
+	      (when (and (not (line? line)) (get-debug-mode))
+		(format t "point = ~a    line = ~a~%" point line))
+	      (when (line? line) 
+		(when (get-debug-mode) (format t "add line ") (print-line line))
+		;; (progn
+		;;(print-line line)
+		(setf (gethash (first line) hash-lines) line)	;start point
+		(setf (gethash (second line) hash-lines) line)) ;end point
+	      )
 	 (when (get-debug-mode)	 (format t "hash points: ~a~%" hash-points)))
     hash-lines))
 
@@ -216,6 +218,8 @@
 	  points-list 
 	  cur-line
 	  key-line)
+      (when (get-debug-mode)
+	(format t "Merge near lines ...~%~%")) 
 
       (loop for point being the hash-key of line-hash do
 	   (setf points-list (get-points point radius))
@@ -226,9 +230,10 @@
 		    (not (eq nil cur-line))
 		    (not (equal key-line cur-line))
 		    (slope-match? key-line cur-line))
-	       ;; (format t "merge lines: ~%Line1 = ~a~%Line2 = ~a~%~%" 
-	       ;; 	       (get-line-string key-line)
-	       ;; 	       (get-line-string cur-line))
+	       (when (get-debug-mode)
+		 (format t "merge lines: ~%Line1 = ~a~%Line2 = ~a~%~%" 
+			 (get-line-string key-line)
+			 (get-line-string cur-line)))
 
 	       (remhash point line-hash)
 	       (remhash (second key-line) line-hash)

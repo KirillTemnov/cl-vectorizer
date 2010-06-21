@@ -24,7 +24,7 @@
   "Write content to file (filename). Overwrite existing file"
   (with-open-file (stream  filename 
 			   :direction :output
-			   :if-exists :overwrite
+			   :if-exists :supersede
 			   :if-does-not-exist :create)
     (format stream content))
   filename)
@@ -99,8 +99,6 @@ Example:
 		 :type (pathname-type filename) 
 		 :directory (pathname-directory filename)))
 		 
-
-(pathname-directory  #p"/tmp/test.txt" )
 
 (defun load-image (path)
   "Load image from file"
@@ -200,20 +198,7 @@ Example:
 	(push p ap-list)))
     ap-list))
 
-;; DEBUG function -- remove?
-;; (defun pprint-point-neibs (point hash-points)
-;;   "DEBUG function, prints Point and all it's neibhours."
-;;   (let 	((p2 (get-hash-point-value (list (- (first point) 1) (second point)) hash-points))
-;; 	 (p3 (get-hash-point-value (list (- (first point) 1) (+ (second point) 1)) hash-points))
-;; 	 (p4 (get-hash-point-value (list (first point) (+ (second point) 1)) hash-points))
-;; 	 (p5 (get-hash-point-value (list (+ (first point) 1) (+ (second point) 1)) hash-points))
-;; 	 (p6 (get-hash-point-value (list (+ (first point) 1) (second point)) hash-points))
-;; 	 (p7 (get-hash-point-value (list (+ (first point) 1) (- (second point) 1)) hash-points))
-;; 	 (p8 (get-hash-point-value (list (first point) (- (second point) 1)) hash-points))
-;; 	 (p9 (get-hash-point-value (list (- (first point) 1) (- (second point) 1)) hash-points)))
-;;     (format t "~s ~s ~s~%~s 1 ~s~%~s ~s ~s~%" p9 p2 p3 p8 p4 p7 p6 p5)))
-
-(defun should-delete-point (point hash-points)
+(defun should-delete-point? (point hash-points)
   "Check if point should be deleted. 
    This check consists of three parts:
    1) Point have 0 neibhours.
@@ -223,10 +208,20 @@ Example:
        p8  p1  p4
        p7  p6  p5
 
-       Masks:
+       Masks (x2):
        0  1  0    0  1  0    0  0  0    0  0  0  
        1  1  0    0  1  1    0  1  1    1  1  0  
        0  0  0    0  0  0    0  1  0    0  1  0  
+
+       Masks (x3):
+       1  1  0    0  1  0    0  1  0    0  1  1  
+       0  1  1    1  1  0    0  1  1    1  1  0 
+       0  0  0    1  0  0    0  0  1    0  0  0 
+
+       0  0  0    0  0  1    1  0  0    0  0  0 
+       1  1  0    0  1  1    1  1  0    0  1  1  
+       0  1  1    0  1  0    0  1  0    1  1  0 
+
    Point should be deleted of one of conditions performed.
 "
   (let* ((points (get-neibhour-points point hash-points))
@@ -238,7 +233,17 @@ Example:
 	   (equal points '(1 0 0 0 0 0 1 0))
 	   (equal points '(1 0 1 0 0 0 0 0))
 	   (equal points '(0 0 1 0 1 0 0 0))
-	   (equal points '(0 0 0 0 1 0 1 0)))))))
+	   (equal points '(0 0 0 0 1 0 1 0))))
+     (and (= sum 3)
+	  (or
+	   (equal points '(1 0 1 0 0 0 0 1))
+	   (equal points '(1 0 0 0 0 1 1 0))
+	   (equal points '(1 0 1 1 0 0 0 0))
+	   (equal points '(1 1 0 0 0 0 1 0))
+	   (equal points '(0 0 0 1 1 0 1 0))
+	   (equal points '(0 1 1 0 1 0 0 0))
+	   (equal points '(0 0 0 0 1 0 1 1))
+	   (equal points '(0 0 1 0 1 1 0 0)))))))
 
 (defun rad-to-degree (value)
   "Convert radians to degrees."
