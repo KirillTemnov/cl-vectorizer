@@ -178,7 +178,7 @@ Example:
 
 (defun get-neibhour-active-points (point hash-points)
   "Return list with neibhours coordinates.
-   Sample:
+   Example:
    p1 = '(3 3)
 
    0  0  0
@@ -191,6 +191,14 @@ Example:
       (when (in-hash p hash-points)
 	(push p neibhours)))
     neibhours))
+
+(defun get-active-points (point line hash-points)
+  "Get list of neibhour points, exclude point that belongs to `line`."
+  (let ((ap (get-neibhour-active-points point hash-points)) ap-list)
+    (dolist (p ap)
+      (when (not (member p line :test #'equal))
+	(push p ap-list)))
+    ap-list))
 
 ;; DEBUG function -- remove?
 ;; (defun pprint-point-neibs (point hash-points)
@@ -239,6 +247,11 @@ Example:
 (defun degree-to-rad (value)
   "Convert degrees to radians."
   (/ (* pi value) 180))
+
+
+(defun remove-list-element-from-hash (list hash)
+  (dolist (i list)
+    (remhash i hash)))
 
 ;; (defun get-other-line-point (line point)
 ;;   "Return another line point."

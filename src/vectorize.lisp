@@ -111,49 +111,53 @@
 ;;    иначе перейти к п 2)
 ;; Закончить когда больше не останется точек
 
+;;tip: (member elem list :test #'equal)
 
-(defun find-end-of-line (point hash-points &key (start-point nil) (tilt-angle nil))
-  "Searches end of line in hash-points."
-  (let* ((active-points (get-neibhour-active-points point hash-points)))
-    (remhash point hash-points)
-    (cond 
+(defun find-end-of-line (point hash-points &key (line nil) (tilt-angle nil))
+  "Search and of line. Store current line in `line`."
+  (let* ((active-points (get-active-points point line hash-points))
+	 (start-point (first (last line))))
+    
+    (cond
+
+      ((eq nil line)			;create new line
+       (cond ((= 0 (length active-points))
+	      (progn
+		(remhash point hash-points)
+		nil))
+	     (t
+	      (progn
+		(push point line)
+		(find-end-of-line (first active-points) :line line)))))
+
       ((=  0 (length active-points))		; end of line
        (progn
-	 (when (eq nil start-point) (error "Error - line from one point"))
-	 (make-line start-point point)))
+	 (push point line)
+	 (remove-list-element-from-hash line hash-points)
+	 (make-line start-point (first line))))
 
-      ((eq nil start-point)		; begin of line
-       (let ((cur-point nil))		; read next 2 points and make recursive call
+      ((>= 3 (length active-points)) ; too match neibhours, remove point finish line
+       (progn 
+	 (push point line)
+	 (remove-list-element-from-hash line hash-points)
+	 (make-line start-point (first line))))
 
-	 (if  (>= 3 (length active-points))
-	      nil				; if line shorter than 3 points return nil
-	      (progn
-		(dotimes (i 3)
-		  (setf cur-point (first active-points))
-		  (remhash cur-point hash-points)
-		  (setf active-points (get-neibhour-active-points cur-point hash-points))
-		  (when (= 0 (length active-points))
-		    (return)))
-		(if (= 0 (length active-points))
-		    nil
-		    (let* ((end (first active-points))
-			   (start point)
-			   (tilt-angle (get-tilt-angle (list start end))))
-		      (find-end-of-line end hash-points :start-point point :tilt-angle tilt-angle)))))))
+      ((>= 3 (length line))	; first 3 points
+       (progn
+	 (push point line)
+	 (when (= 3 (length line))
+	   (tilt-angle (get-tilt-angle (list start-point point))))
+	 (find-end-of-line (first active-points) :line line :tilt-angle tilt-angle)))
+      
+      (t				; line length > 3 point
+	 (if (point-belong-to-line? point start-point (first line) tilt-angle)
+	     (progn
+	       (push point line)
+	       (find-end-of-line (first active-points) :line line :tilt-angle tilt-angle))
 
-      (t				; read next point of line
-       (let  ((end-point (first active-points)))
-	      (if (point-belong-to-line? point start-point end-point tilt-angle)
-		  (find-end-of-line end-point hash-points :start-point start-point :tilt-angle tilt-angle)
-		  (progn
-		    (make-line start-point end-point)
-		    (setf (gethash point hash-points) 1))))))))
-
-       ;; (let* ((end-point (first active-points))
-       ;; 	      (new-tilt-angle (get-tilt-angle (list start-point end-point))))
-       ;; 	 (if (> (get-max-angle-on-line) (abs (- tilt-angle new-tilt-angle))) ; 15 degrees max
-       ;; 	     (find-end-of-line end-point hash-points :start-point start-point :tilt-angle tilt-angle)
-       ;; 	     (make-line start-point point )))))))
+	     (progn
+	       (remove-list-element-from-hash line hash-points)
+	       (make-line start-point (first line))))))))
 
 (defun point-have-one-neibhour? (point hash-points)
   "Returns T if point have only one neibhour."
