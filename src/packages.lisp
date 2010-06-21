@@ -15,8 +15,6 @@
 	   #:dumb-convert
 	   #:resize-to-200-dpi
 	   #:thin-image-file
-;;  hide setting 
-	   #:*settings* 
 	   #:version
 	   #:set-working-dir-in
 	   #:set-working-dir-out	   
@@ -29,7 +27,7 @@
 ;;------------------------------------------------------------------------------
 ;; Formating
 ;;------------------------------------------------------------------------------
-(defvar version "0.1.4.6" "Package version.")
+(defvar version "0.1.4.7" "Package version.")
 ;; format sizes
 (defvar +a0+ '(841 1189))
 (defvar +a0-landscape+ '(1189 841))
@@ -46,9 +44,6 @@
 (defvar +inch+ 25.4)
 (defvar +error-in-quess+ 0.15)
 (defvar +min-dpi+ 200.0)
-(defvar +max-angle-on-line+ 15)
-(defvar +min-angle-on-line+ 5)
-(defvar +max-slope-angle+ 5)
 ;-------------------------------------------------------------------------------
 ;; width and height of cutting sheets
 (defvar +sheet-width+ 500)
@@ -120,6 +115,13 @@
 ;; threshold for binarization
 (setf (getf *settings* :threshold-bin) "65%")
 
+
+(setf (getf *settings* :max-angle-on-line) 15)
+
+(setf (getf *settings* :min-angle-on-line) 5)
+
+(setf (getf *settings* :max-slope-angle) 5)
+
 ;;------------------------------------------------------------------------------
 ;; accessors 
 ;;-----------------------------------------------------------------------------
@@ -176,3 +178,11 @@ abc
 (property debug-mode
 	  :set-docstring "Set debug-mode. If debug-mode set to t, debug messages prints to stdout."
 	  :get-docstring "Get debug-mode state (t or nil - default).")
+
+(property max-angle-on-line
+	  :set-docstring "Set maximum angle deviation from one point to other in one straight line."
+	  :get-docstring "Get maximum angle deviation from one point to other in one straight line.")
+
+(property max-slope-angle
+	  :set-docstring "Get maximum slope angle. If slope angle between 2 lines less than slope angle, they are parallel."
+	  :get-docstring "Set maximum slope angle.")

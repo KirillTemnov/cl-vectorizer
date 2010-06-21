@@ -1,20 +1,6 @@
 
 (in-package #:cl-vectorizer)
 
-;; "
-;; Что нужно сделать?
-;; 1) Получить первую точку из массива точек у которой будет 1 сосед.
-;;    Это будет начало новой линии. Удалить точку из хеша.
-;; 2) Найти соседнюю точку и получить направление.
-;;    Направление не может меняться более чем на 90 грудусов.
-;;    Удалить точку из хеша.
-;; 3) Если у соседней точки нет соседей или направление сильно меняется - добавить новую линию,
-;;    иначе перейти к п 2)
-;; Закончить когда больше не останется точек
-
-;; Вспомогательные функции
-;; - угол наклона прямой
-;; "
 ;; DEBUG
 (defun print-line (line)
   "Prints line for debug purposes.
@@ -78,8 +64,6 @@
     (t
      (< (first x) (first y)))))
 
-;; (sort '((59 84) (59 58) (59 99) (59 87)) #'compare-points)
-;;  (sort '((59 84) (60 58) (45 99) (58 87)) #'compare-points)
 
 (defun get-tilt-angle (line)
   "Returns tilt angle between line and horizont. Result return in degrees."
@@ -92,19 +76,6 @@
       (t (rad-to-degree (atan (/ dy dx)))))))
 
 
-    ;; (flet ((min-x-point (points-list)
-    ;; 	     (let* ((min-pt (first points-list))
-    ;; 		   (min-value (first min-pt)))
-    ;; 	       (dolist (pt points-list)
-    ;; 		 (when (> min-value (first pt))
-    ;; 		   (setf min-value (first pt))
-    ;; 		   (setf min-pt pt)))
-    ;; 	       min-pt)))
-    ;;   (flet ((max-x-poi
-    ;; (setf result 
-    ;; 	  (make-line (list 
-    ;; 		      (min (caar line1) (caadr line1) (caar line2) (caadr line2))
-    ;; 		      ( 
 (defun merge-two-lines (line1 line2)
   "Merge two lines in one"
   (let*
@@ -112,11 +83,6 @@
        (start (first points))
        (end (fourth points))
       (result (make-line start end)))
-	  ;; (cond	    
-	  ;;   ((< (caar line1) (caar line2))
-	  ;;    (make-line (first line1) (second line2)))
-	  ;;   (t 
-	  ;;    (make-line (first line2) (second line1)))))
     (when  (< (third result) (+ (third line1) (third line2)))
       (format t "Merge lines ~a and ~a~%" (get-line-string line1) (get-line-string line2))
       (format t "Result: ~a~%~%" result))
@@ -133,21 +99,19 @@
   "Check if point could belong to line."
   (let ((distance (get-points-distance start-line-point end-line-point))
 	 (new-tilt (get-tilt-angle (list start-line-point point))))
-    (> +max-angle-on-line+ (substitute-angles tilt-angle new-tilt)))) ; 15 degrees 
-    ;; (cond
-    ;;   ((and
-    ;; 	(> 1400 distance)
-    ;; 	(> +max-angle-on-line+  (substitute-angles new-tilt tilt-angle))) t)
-    ;;   (t nil))))
-    ;;   ((and
-    ;;   	(> 5 distance)
-    ;;   	(> +max-angle-on-line+  (substitute-angles new-tilt tilt-angle))) t)
-    ;;   ((and
-    ;;   	(> 50 distance)
-    ;;   	(> +min-angle-on-line+ (substitute-angles new-tilt tilt-angle)) t))
-    ;;   ((= 0  (substitute-angles new-tilt tilt-angle)) t)
-    ;;   (t nil))))
-       
+    (> (get-max-angle-on-line) (substitute-angles tilt-angle new-tilt)))) ; 15 degrees 
+
+;; Что нужно сделать?
+;; 1) Получить первую точку из массива точек у которой будет 1 сосед.
+;;    Это будет начало новой линии. Удалить точку из хеша.
+;; 2) Найти соседнюю точку и получить направление.
+;;    Направление не может меняться более чем на 90 грудусов.
+;;    Удалить точку из хеша.
+;; 3) Если у соседней точки нет соседей или направление сильно меняется - добавить новую линию,
+;;    иначе перейти к п 2)
+;; Закончить когда больше не останется точек
+
+
 (defun find-end-of-line (point hash-points &key (start-point nil) (tilt-angle nil))
   "Searches end of line in hash-points."
   (let* ((active-points (get-neibhour-active-points point hash-points)))
@@ -187,7 +151,7 @@
 
        ;; (let* ((end-point (first active-points))
        ;; 	      (new-tilt-angle (get-tilt-angle (list start-point end-point))))
-       ;; 	 (if (> +max-angle-on-line+ (abs (- tilt-angle new-tilt-angle))) ; 15 degrees max
+       ;; 	 (if (> (get-max-angle-on-line) (abs (- tilt-angle new-tilt-angle))) ; 15 degrees max
        ;; 	     (find-end-of-line end-point hash-points :start-point start-point :tilt-angle tilt-angle)
        ;; 	     (make-line start-point point )))))))
 
@@ -218,13 +182,13 @@
 	 (when (get-debug-mode)	 (format t "hash points: ~a~%" hash-points)))
     hash-lines))
 
-;write better
+;;TODO write it better
 (defun slope-match? (line1 line2)
   "Returns T if screw of two lines match and nil otherwise."
   (let ((angle1 (get-tilt-angle line1))
 	(angle2 (get-tilt-angle line2)))
     (cond
-      ((>= +max-slope-angle+ (abs (- angle1 angle2))) t)
+      ((>= (get-max-slope-angle) (abs (- angle1 angle2))) t)
       (t nil))))
 
 (defun merge-near-lines (line-hash &key (radius 3))
