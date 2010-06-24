@@ -189,7 +189,6 @@
 	 (when (get-debug-mode)	 (format t "hash points: ~a~%" hash-points)))
     hash-lines))
 
-;;TODO write it better
 (defun slope-match? (line1 line2)
   "Returns T if screw of two lines match and nil otherwise."
   (let ((angle1 (get-tilt-angle line1))
@@ -197,6 +196,18 @@
     (cond
       ((>= (get-max-slope-angle) (abs (- angle1 angle2))) t)
       (t nil))))
+
+;;TODO write it better
+(defun can-merge? (line1 line2)
+  "Returns T if lines can be merged and nil otherwise."
+  (cond 
+    ((or
+      (< (third line1) +min-line-len+)
+      (< (third line2) +min-line-len+))
+     t)
+    (t
+     (slope-match? line1 line2))))
+
 
 (defun merge-near-lines (line-hash &key (radius 3))
   "Find near lines and merge them. Returns new hash with lines."
@@ -229,7 +240,7 @@
 	     (when (and 
 		    (not (eq nil cur-line))
 		    (not (equal key-line cur-line))
-		    (slope-match? key-line cur-line))
+		    (can-merge? key-line cur-line))
 	       (when (get-debug-mode)
 		 (format t "merge lines: ~%Line1 = ~a~%Line2 = ~a~%~%" 
 			 (get-line-string key-line)
