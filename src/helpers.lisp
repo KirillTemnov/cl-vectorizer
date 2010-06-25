@@ -273,5 +273,8 @@ Example:
     (loop for point being the hash-key of hash-lines do
 	 (setf line (gethash point hash-lines nil))
 	 (when (line? line)
+	   ;; remove lines, shorter than (get-max-noise-line-length)
+	   (when (>= (get-max-noise-line-length) (third line))
+	     (remhash (first line) hash-lines))
 	   (remhash (second line) hash-lines)))
     hash-lines))

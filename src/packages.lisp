@@ -27,7 +27,7 @@
 ;;------------------------------------------------------------------------------
 ;; Formating
 ;;------------------------------------------------------------------------------
-(defvar version "0.2.0" "Package version.")
+(defvar version "0.2.5" "Package version.")
 ;; format sizes
 (defvar +a0+ '(841 1189))
 (defvar +a0-landscape+ '(1189 841))
@@ -125,6 +125,8 @@
 (setf (getf *settings* :max-slope-angle) 5)
 
 (setf (getf *settings* :line-search-radius) 4)
+
+(setf (getf *settings* :max-noise-line-length) 3)
 ;;------------------------------------------------------------------------------
 ;; accessors 
 ;;-----------------------------------------------------------------------------
@@ -193,3 +195,7 @@ abc
 (property line-search-radius 
 	  :set-docstring "Set radius in points for searching near lines."
 	  :get-docstring "Get radius for searching near lines.")
+
+(property max-noise-line-length
+	  :set-docstring "Set maximal length of noise lines."
+	  :get-docstring "Get maximal length of noise lines.")
