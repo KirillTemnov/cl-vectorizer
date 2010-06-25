@@ -232,7 +232,7 @@
 
 (defun merge-near-lines (line-hash)
   "Find near lines and merge them. Returns new hash with lines."
-  (flet ((get-points (line radius)
+  (flet ((get-points (line)
 	   (let* ((p1 (first line))
 		  (p2 (second line))
 		  (x1 (first p1))
