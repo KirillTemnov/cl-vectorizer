@@ -44,7 +44,7 @@
 (defvar +inch+ 25.4)
 (defvar +error-in-quess+ 0.15)
 (defvar +min-dpi+ 200.0)
-(defvar +min-line-len+ 4 "Minimum length of line, that can be merged with other line without analysing slope angle")
+(defvar +min-line-len+ 3 "Minimum length of line, that can be merged with other line without analysing slope angle")
 ;-------------------------------------------------------------------------------
 ;; width and height of cutting sheets
 (defvar +sheet-width+ 500)
@@ -123,6 +123,7 @@
 
 (setf (getf *settings* :max-slope-angle) 5)
 
+(setf (getf *settings* :line-search-radius) 4)
 ;;------------------------------------------------------------------------------
 ;; accessors 
 ;;-----------------------------------------------------------------------------
@@ -185,5 +186,9 @@ abc
 	  :get-docstring "Get maximum angle deviation from one point to other in one straight line.")
 
 (property max-slope-angle
-	  :set-docstring "Get maximum slope angle. If slope angle between 2 lines less than slope angle, they are parallel."
-	  :get-docstring "Set maximum slope angle.")
+	  :set-docstring "Set maximum slope angle. If slope angle between 2 lines less than slope angle, they are parallel."
+	  :get-docstring "Get maximum slope angle.")
+
+(property line-search-radius 
+	  :set-docstring "Set radius in points for searching near lines."
+	  :get-docstring "Get radius for searching near lines.")
