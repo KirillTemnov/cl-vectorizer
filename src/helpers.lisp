@@ -258,6 +258,7 @@ Example:
   (dolist (i list)
     (remhash i hash)))
 
+
 ;; (defun get-other-line-point (line point)
 ;;   "Return another line point."
 ;;   (cond
@@ -266,11 +267,11 @@ Example:
 ;;     (t
 ;;      (error "Point not belong to line"))))
 
-;; (defun remove-hash-lines-duplicates (hash-lines)
-;;   "Remove duplicate key entries, points to one line."
-;;   (let (line)
-;;     (loop for point being the hash-key of hash-lines do
-;; 	 (setf line (gethash point hash-lines nil))
-;; 	 (when (line? line)
-;; 	   (remhash (second line) hash-lines)))
-;;     hash-lines))
+(defun remove-hash-lines-duplicates (hash-lines)
+  "Remove duplicate key entries, points to one line."
+  (let (line)
+    (loop for point being the hash-key of hash-lines do
+	 (setf line (gethash point hash-lines nil))
+	 (when (line? line)
+	   (remhash (second line) hash-lines)))
+    hash-lines))

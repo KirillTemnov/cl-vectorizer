@@ -137,11 +137,16 @@ TODO Add default values.
 
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
 
-    (when (get-debug-mode) (format t "vectorize ... ~%" ))
-
+    (when (get-debug-mode) 
+      (format t "vectorize ... ~%" )
+      (format t "Total lines ~a ~%" (hash-table-count ht ))
+      )
+    
     (setf lines-ht (merge-near-lines (vectorize-hash ht)))
+;;    (setf lines-ht (merge-near-lines (vectorize-hash lines-ht)))
     
     (when (get-debug-mode) (format t "export to svg ... ~%"))
+    (remove-hash-lines-duplicates lines-ht)
 
     (save-hashtable-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))
     lines-ht))
