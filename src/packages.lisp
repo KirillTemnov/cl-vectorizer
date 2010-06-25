@@ -45,6 +45,7 @@
 (defvar +error-in-quess+ 0.15)
 (defvar +min-dpi+ 200.0)
 (defvar +min-line-len+ 3 "Minimum length of line, that can be merged with other line without analysing slope angle")
+(defvar +max-line-len+ 7 "Max line length, after which slope angle must strict match")
 ;-------------------------------------------------------------------------------
 ;; width and height of cutting sheets
 (defvar +sheet-width+ 500)

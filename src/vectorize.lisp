@@ -127,7 +127,11 @@
   "Check if point could belong to line."
   (let ((distance (get-points-distance start-line-point end-line-point))
 	 (new-tilt (get-tilt-angle (list start-line-point point))))
-    (> (get-max-angle-on-line) (substitute-angles tilt-angle new-tilt)))) ; 15 degrees 
+    (cond
+      ((< +max-line-len+ distance)
+       (> 0.5 (substitute-angles tilt-angle new-tilt)))
+      (t
+       (> (get-max-angle-on-line) (substitute-angles tilt-angle new-tilt)))))) ; 15 degrees 
 
 ;; Что нужно сделать?
 ;; 1) Получить первую точку из массива точек у которой будет 1 сосед.
@@ -170,7 +174,7 @@
 	 (remove-list-element-from-hash line hash-points)
 	 (make-line start-point (first line))))
 
-      ((>= 3 (length line))	; first 3 points
+      ((>= +min-line-len+ (length line))	; first 3 points
        (progn
 	 (push point line)
 	 (when (= 3 (length line))
@@ -212,24 +216,27 @@
 	 (when (get-debug-mode)	 (format t "hash points: ~a~%" hash-points)))
     hash-lines))
 
-(defun slope-match? (line1 line2)
-  "Returns T if screw of two lines match and nil otherwise."
-  (let ((angle1 (get-tilt-angle line1))
-	(angle2 (get-tilt-angle line2)))
-    (cond
-      ((>= (get-max-slope-angle) (abs (- angle1 angle2))) t)
-      (t nil))))
-
 ;;TODO write it better
 (defun can-merge? (line1 line2)
   "Returns T if lines can be merged and nil otherwise."
-  (cond 
-    ((or
-      (< (third line1) +min-line-len+)
-      (< (third line2) +min-line-len+))
-     t)
-    (t
-     (slope-match? line1 line2))))
+  (let ((angle1 (get-tilt-angle line1))
+	(angle2 (get-tilt-angle line2)))
+    (cond
+      ((or
+	(< (third line1) +min-line-len+)
+	(< (third line2) +min-line-len+))
+       t)
+
+      ((and
+	(or
+	 (> (third line2) +max-line-len+)
+	 (> (third line1) +max-line-len+))
+	(>= 0.5 (abs (- angle1 angle2))))
+       t)
+
+      ((>= (get-max-slope-angle) (abs (- angle1 angle2))) t)
+      (t nil))))
+
 
 
 (defun merge-near-lines (line-hash)

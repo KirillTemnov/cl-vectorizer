@@ -143,7 +143,6 @@ TODO Add default values.
       )
     
     (setf lines-ht (merge-near-lines (vectorize-hash ht)))
-;;    (setf lines-ht (merge-near-lines (vectorize-hash lines-ht)))
     
     (when (get-debug-mode) (format t "export to svg ... ~%"))
     (remove-hash-lines-duplicates lines-ht)
