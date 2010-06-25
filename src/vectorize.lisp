@@ -96,6 +96,8 @@
 	  (sort (list (list p1 p3 d1) (list p1 p4 d2) (list p2 p3 d3) (list p2 p4 d4))
 		#'(lambda (elem1 elem2) (> (third elem1) (third elem2))))))
     (make-line (first (first sorted-distances)) (second (first sorted-distances)))))
+
+
 ;; ;;    (format t "Sorted distances:~%~a" sorted-distances)))
 	 
 
@@ -143,7 +145,7 @@
   "Search and of line. Store current line in `line`."
   (let* ((active-points (get-active-points point line hash-points))
 	 (start-point (first (last line))))
-    
+
     (cond
 
       ((eq nil line)			;create new line
@@ -162,7 +164,7 @@
 	 (remove-list-element-from-hash line hash-points)
 	 (make-line start-point (first line))))
 
-      ((>= 3 (length active-points)) ; too match neibhours, remove point finish line
+      ((<= 3 (length active-points)) ; too match neibhours, remove point finish line
        (progn 
 	 (push point line)
 	 (remove-list-element-from-hash line hash-points)
@@ -203,7 +205,7 @@
 	      (when (and (not (line? line)) (get-debug-mode))
 		(format t "point = ~a    line = ~a~%" point line))
 	      (when (line? line) 
-		;;(when (get-debug-mode) (format t "add line ") (print-line line))
+		(when (get-debug-mode) (format t "add line ") (print-line line))
 		(setf (gethash (first line) hash-lines) line)	;start point
 		(setf (gethash (second line) hash-lines) line)) ;end point
 	      )
