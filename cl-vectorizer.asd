@@ -17,6 +17,7 @@
 				     (:file "command" :depends-on ("packages" "helpers"))
 				     (:file "zong-suen" :depends-on ("packages" "helpers"))
 				     (:file "vectorize" :depends-on ("packages" "helpers"))
+				     (:file "hough" :depends-on ("packages" "helpers"))
 				     (:file "svg" :depends-on ("packages" "helpers"))
 	       ;; (:file "file" :depends-on ("module"))
                )))

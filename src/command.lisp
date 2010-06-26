@@ -150,6 +150,19 @@ TODO Add default values.
     (save-hashtable-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))
     lines-ht))
 
+(defun get-image-circles (infile &key (outfile (change-extension infile "png")))
+  "Thin image and extract circles from it."
+  (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
+	 (image (load-image image-path))
+	 (w (png:image-width image))
+	 (h (png:image-height image))
+	 (ht (thin-image-hash (image-to-hashtable image)))
+	 lines-ht)
+    (when (get-debug-mode) (format t "Creating circles, image have ~a points" (hash-table-count ht)))
+    (save-image (hashtable-to-image ht w h) (get-out-path outfile))
+    (find-circles ht 10)
+    ))
+
 (defun guess-format (image-path)
   "Return format of image based on it's DPI.
 list of formats: 'A0 'A1 'A2 'A3 'A4 'A5 'A6 'A7"

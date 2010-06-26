@@ -253,6 +253,22 @@ Example:
   "Convert degrees to radians."
   (/ (* pi value) 180))
 
+(defun get-points-distance (p1 p2)
+  "Returns eucleadian distance between 2D points p1 and p2"
+  (let* ((x1 (first p1))
+	 (y1 (second p1))
+	 (x2 (first p2))
+	 (y2 (second p2))
+	 (dx (- x2 x1))
+	 (dy (- y2 y1)))
+    (sqrt (+ (* dx dx)  (* dy dy)))))
+
+(defun hashtable-keys-to-list (hash)
+  "Create list from hash table keys."
+  (let (lst)
+    (loop for key being the hash-key of hash do
+	 (push key lst))
+    lst))
 
 (defun remove-list-element-from-hash (list hash)
   (dolist (i list)
@@ -278,3 +294,4 @@ Example:
 	     (remhash (first line) hash-lines))
 	   (remhash (second line) hash-lines)))
     hash-lines))
+

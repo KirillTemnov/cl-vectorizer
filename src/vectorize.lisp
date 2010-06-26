@@ -27,16 +27,6 @@
    line is a list:  '((x1 y1) (x2 y2) length)"
   (format nil "#Line {~a} ~%" line))
 
-(defun get-points-distance (p1 p2)
-  "Returns eucleadian distance between 2D points p1 and p2"
-  (let* ((x1 (first p1))
-	 (y1 (second p1))
-	 (x2 (first p2))
-	 (y2 (second p2))
-	 (dx (- x2 x1))
-	 (dy (- y2 y1)))
-    (sqrt (+ (* dx dx)  (* dy dy)))))
-
 (defun make-line (p1 p2)
   "Create line which starts from left (0) to right (infinity)"
   (cond
