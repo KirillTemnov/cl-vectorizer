@@ -80,6 +80,37 @@
 		nil
 		(list radius (list (floor a) (floor b))))))))
 
+
+(defun find-similar-circles (circle circles-hash)
+  "Find circles, similar to `circle` by radius and center, inside `circles-hash`."
+  (flet ((similar-circles? (circ1 circ2)
+	   ;; Check if `circ1` and `circ2` have approximately the same 
+	   ;; radius and center point.
+	   (let ((center-delta 5)       ; max center points distance is 5 points
+		 (delta-r 2))			; radius may vary in 2 points
+	     (and
+	      (>= delta-r (- (first circ1) (first circ2)))
+	      (>= center-delta (get-points-distance (second circ1) (second circ2)))))))
+
+    (loop for cur-circle being the hash-key of circles-hash do
+	 (when (and
+		(not (equal circle cur-circle))
+		(similar-circles? circle cur-circle))
+
+	   (let ((pts (gethash circle circles-hash)) (new-pts (gethash cur-circle circles-hash)))
+
+	     (setf (gethash circle circles-hash) (push-to-list-if-not-present pts new-pts))
+	     (remhash cur-circle circles-hash))))))
+
+
+(defun merge-hashed-circles (circles-hash)
+  "Merge of several hashes circles in one.
+As circles may have offsets during the vectorization process, inside `circles-hash`
+may real cirlces consists of several circles with small offset of center point ( < 3 pt)
+and small offset from circle radius. This method merge such circles *putting all points in one resulting circle*. Resulting circle and its points returns to `circles-hash`, other circles removed from it."
+  (loop for circle being the hash-key of circles-hash do
+       (find-similar-circles circle circles-hash)))
+
 (defun find-circles (points-hash max-distance)
   "Find circles by Hough transformation method."
   (let ((circles-hash (make-hash-table :test 'equal))
@@ -98,26 +129,14 @@
 ;;	    (format t "Circle params: ~a~%" circle-params)
 	    (let ((hash-val (gethash circle-params circles-hash)))
 	      (setf hash-val (push-to-list-if-not-present hash-val p1 p2 p3))
-	      ;; (if hash-val
-	      ;; 	  (when (not (member (list p1 p2 p3) hash-val 
-	      ;; 			     :test #'(lambda (l1 l2) 
-	      ;; 				       (or
-	      ;; 				       	(member (first l1) l2)
-	      ;; 				       	(member (second l1) l2)
-	      ;; 				       	(member (third l1) l2)))))
-	      ;; 	    (progn
-	      ;; 	      (push p1 hash-val)
-	      ;; 	      (push p2 hash-val)
-	      ;; 	      (push p3 hash-val))
-	      ;; 	  (setf hash-val (list (list p1 p2 p3))))
-;;	      (format t "Hash val : ~a~%" hash-val)
 	      (setf (gethash circle-params circles-hash) hash-val)))))
 ;;    (format t "Circle params: ~a~%" circles-hash)))
 
       (loop for circle-params being the hash-key of circles-hash do
 	   (let ((lst (gethash circle-params circles-hash)))
 	     (when (> 10 (length lst))	; change this to more comples condition
-	       (remhash circle-params circles-hash)))))
+	       (remhash circle-params circles-hash))))
+      (merge-hashed-circles circles-hash))
 
 ;;    (format t "Hash size : ~a ~%" (hash-table-count circles-hash))
     circles-hash))
