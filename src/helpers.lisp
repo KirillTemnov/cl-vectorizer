@@ -267,7 +267,7 @@ Example:
   "Create list from hash table keys."
   (let (lst)
     (loop for key being the hash-key of hash do
-	 (push key lst))
+	 (Push key lst))
     lst))
 
 (defun remove-list-element-from-hash (list hash)
@@ -295,3 +295,17 @@ Example:
 	   (remhash (second line) hash-lines)))
     hash-lines))
 
+(defun push-to-list (list &rest elems )
+  "Push all elements to list."
+  (dolist (i elems)
+    (push i list))
+  list)
+
+(defun push-to-list-if-not-present (list &rest elems)
+  "Push elements to list if they don't already in `list`."
+  (dolist (i elems)
+    (when (not (member i list :test #'equal))
+      (push i list)))
+  list)
+
+(push-to-list-if-not-present nil 5 4 3 2 1)

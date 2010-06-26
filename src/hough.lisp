@@ -97,16 +97,32 @@
 	  (when circle-params
 ;;	    (format t "Circle params: ~a~%" circle-params)
 	    (let ((hash-val (gethash circle-params circles-hash)))
-	      (if hash-val
-		  (push (list p1 p2 p3) hash-val)
-		  (setf hash-val (list (list p1 p2 p3))))
+	      (setf hash-val (push-to-list-if-not-present hash-val p1 p2 p3))
+	      ;; (if hash-val
+	      ;; 	  (when (not (member (list p1 p2 p3) hash-val 
+	      ;; 			     :test #'(lambda (l1 l2) 
+	      ;; 				       (or
+	      ;; 				       	(member (first l1) l2)
+	      ;; 				       	(member (second l1) l2)
+	      ;; 				       	(member (third l1) l2)))))
+	      ;; 	    (progn
+	      ;; 	      (push p1 hash-val)
+	      ;; 	      (push p2 hash-val)
+	      ;; 	      (push p3 hash-val))
+	      ;; 	  (setf hash-val (list (list p1 p2 p3))))
 ;;	      (format t "Hash val : ~a~%" hash-val)
 	      (setf (gethash circle-params circles-hash) hash-val))))))
 ;;    (format t "Circle params: ~a~%" circles-hash)))
+
+    (loop for circle-params being the hash-key of circles-hash do
+	 (let ((lst (gethash circle-params circles-hash)))
+	    (when (> 18 (length lst))
+	      (remhash circle-params circles-hash))))
+
+    (format t "Hash size : ~a ~%" (hash-table-count circles-hash))
+;;    ))
     (print-hash circles-hash)))
-    ;; (if circle-params 
-    ;; 	(print-hash circle-params)
-    ;; 	(format t "Circle params are empty~%"  ))))
+
 
 	 
 
