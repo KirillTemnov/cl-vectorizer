@@ -91,6 +91,13 @@ Format:
    (object-type   :initform "image"))
   (:documentation "Raster image placed on svg."))
 
+(defun make-svg-image (filename &key (left-point '(0 0)) (width "100%") (height "100%"))
+  (make-instance 'svg-image
+		 :filename filename
+		 :left-point left-point
+		 :width width
+		 :height height))
+
 (defmethod to-svg ((object svg-image))
   (let* ((id (cond ((eq nil (slot-value object 'id)) "")
 		   (t (format nil "id=\"~a\" " (slot-value object 'id)))))
@@ -98,7 +105,7 @@ Format:
 	 (x (first left))
 	 (y (second left)))
     (format nil "<image ~a xlink:href=\"~a\" x=\"~a\" y=\"~a\" width=\"~a\" height=\"~a\"/>~%"
-	    id x y (slot-value object 'width) (slot-value object 'height))))
+	    id (slot-value object 'filename) x y (slot-value object 'width) (slot-value object 'height))))
 
 ;;------------------------------------------------------------------------------  
 
@@ -118,27 +125,24 @@ Format:
    (width
     :initarg :width :initform "100%")
    (height
-    :initarg :height :initform "100%")
-   (file-to-save
-    :initarg :file-to-save :initform nil))
-   (:documentation "Manager for svg drawing entities."))
+    :initarg :height :initform "100%"))
+  (:documentation "Manager for svg drawing entities."))
 
 ;;------------------------------------------------------------------------------
-(defgeneric create-svg-manager (width height &key filename)
+(defgeneric create-svg-manager (width height)
   (:documentation "Wrapper to make-instance function."))
 
 (defgeneric add-entity (manager entity)
   (:documentation "Add new entity to manager."))
 
 (defgeneric reset-manager (manager)
-  (:documentation "Reset manager state (and delete all objects) to default. Slot 
-file-to-save is not resets!"))
+  (:documentation "Reset manager state (and delete all objects) to default."))
 
-(defgeneric flush-manager (manager)
+(defgeneric flush-manager (manager filename)
   (:documentation "Save all objects to file."))
 ;;--------------------------------------------------------------------------------
-(defmethod create-svg-manager (width height &key (filename "out.svg"))
-  (make-instance 'svg-manager :file-to-save (get-out-path filename) :width width :height height))
+(defmethod create-svg-manager (width height)
+  (make-instance 'svg-manager :width width :height height))
 
 (defmethod add-entity ((manager svg-manager) (entity svg-object))
   (cond
@@ -150,13 +154,13 @@ file-to-save is not resets!"))
 (defmethod reset-manager ((manager svg-manager))
   (setf (slot-value manager 'entities-list) nil))
 
-(defmethod flush-manager ((manager svg-manager))
+(defmethod flush-manager ((manager svg-manager) filename)
   (when (not (eq nil (slot-value manager 'entities-list)))
     (write-to-file 
      (render-svg-file (slot-value manager 'entities-list)
 		      (slot-value manager 'width)
 		      (slot-value manager 'height))
-		   (namestring (slot-value manager 'file-to-save)))))
+		   (namestring (get-out-path filename)))))
 
 ;;--------------------------------------------------------------------------------
 (defun hashtable-lines-to-svg-manager (ht manager)
@@ -184,16 +188,17 @@ file-to-save is not resets!"))
 (defun list-points-to-svg-manager (points-list manager)
   "Save points from list to svg manager."
   (dolist (pt points-list)
-    (add-entity manager (make-svg-point :point pt)))
+    (when (and  (listp pt) (= 2 (length pt)))
+      (add-entity manager (make-svg-point pt :color "magenta"))))
   (when (get-debug-mode)
     (format nil "Total ~a points pushed to svg manager.~%" (length points-list)))
   manager)
 
-
-(defun save-svg (manager &key (filename #p"out.svg"))
-  "Save manager to svg file."
-  (setf (slot-value manager 'file-to-save) filename)
-  (flush-manager manager))
+;; Remove
+;; (defun save-svg (manager &key (filename #p"out.svg"))
+;;   "Save manager to svg file."
+;;   (setf (slot-value manager 'file-to-save) filename)
+;;   (flush-manager manager filename))
 
 				 
 

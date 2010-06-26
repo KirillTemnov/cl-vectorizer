@@ -132,7 +132,9 @@ TODO Add default values.
 	 (w (png:image-width image))
 	 (h (png:image-height image))
 	 (ht (thin-image-hash (image-to-hashtable image)))
+	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
 	 lines-ht)
+	 
     (when (get-debug-mode) (format t "format image ~a ... ~%"  (get-out-path outfile)))
 
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
@@ -146,8 +148,12 @@ TODO Add default values.
     
     (when (get-debug-mode) (format t "export to svg ... ~%"))
     (remove-hash-lines-duplicates lines-ht)
+    
 
-    (save-hashtable-lines-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))
+    (setf manager (hashtable-lines-to-svg-manager lines-ht manager))
+    
+    (flush-manager manager "out.svg")
+    
     lines-ht))
 
 (defun get-image-circles (infile &key (outfile (change-extension infile "png")))
@@ -157,13 +163,23 @@ TODO Add default values.
 	 (w (png:image-width image))
 	 (h (png:image-height image))
 	 (ht (thin-image-hash (image-to-hashtable image)))
+	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
+	 circles-hash
 	 lines-ht)
     (when (get-debug-mode) (format t "Creating circles, image have ~a points" (hash-table-count ht)))
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
 
-    (save-hashtable-circles-as-svg (find-circles ht (get-max-circle-diameter)) 
-				   (format nil "~apx" w) (format nil "~apx"  h))
-    ))
+
+    (setf circles-hash (find-circles ht (get-max-circle-diameter)))
+
+
+    (loop for circle being the hash-key of circles-hash do
+	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
+
+    (hashtable-circles-to-svg-manager circles-hash manager) 
+
+    (add-entity manager (make-svg-image outfile))
+    (flush-manager manager "out.svg")))
 
 (defun guess-format (image-path)
   "Return format of image based on it's DPI.
