@@ -78,7 +78,7 @@
 ;;	    (list radius (list a b))))))
 	    (if (< (max (get-points-distance p1 p2) (get-points-distance p2 p3) (get-points-distance p3 p1) (* 2 radius)) max-distance)
 		nil
-		(list radius (list a b)))))))
+		(list radius (list (floor a) (floor b))))))))
 
 (defun find-circles (points-hash max-distance)
   "Find circles by Hough transformation method."
@@ -88,7 +88,7 @@
 	near-points-list
 	(i 0))
     (dolist (p1 points-list)
-      (incf i)
+      (incf i)				;remove p1 after nd of loop?
       (format t "tick ~a ...~%" i)
       (setf near-points-list (get-near-points p1 points-list max-distance))
       (dolist (p2 near-points-list)
@@ -111,17 +111,18 @@
 	      ;; 	      (push p3 hash-val))
 	      ;; 	  (setf hash-val (list (list p1 p2 p3))))
 ;;	      (format t "Hash val : ~a~%" hash-val)
-	      (setf (gethash circle-params circles-hash) hash-val))))))
+	      (setf (gethash circle-params circles-hash) hash-val)))))
 ;;    (format t "Circle params: ~a~%" circles-hash)))
 
-    (loop for circle-params being the hash-key of circles-hash do
-	 (let ((lst (gethash circle-params circles-hash)))
-	    (when (> 18 (length lst))
-	      (remhash circle-params circles-hash))))
+      (loop for circle-params being the hash-key of circles-hash do
+	   (let ((lst (gethash circle-params circles-hash)))
+	     (when (> 10 (length lst))	; change this to more comples condition
+	       (remhash circle-params circles-hash)))))
 
-    (format t "Hash size : ~a ~%" (hash-table-count circles-hash))
+;;    (format t "Hash size : ~a ~%" (hash-table-count circles-hash))
+    circles-hash))
 ;;    ))
-    (print-hash circles-hash)))
+;;    (print-hash circles-hash)))
 
 
 	 

@@ -274,7 +274,6 @@ Example:
   (dolist (i list)
     (remhash i hash)))
 
-
 ;; (defun get-other-line-point (line point)
 ;;   "Return another line point."
 ;;   (cond
@@ -308,4 +307,3 @@ Example:
       (push i list)))
   list)
 
-(push-to-list-if-not-present nil 5 4 3 2 1)

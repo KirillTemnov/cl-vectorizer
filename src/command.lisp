@@ -147,7 +147,7 @@ TODO Add default values.
     (when (get-debug-mode) (format t "export to svg ... ~%"))
     (remove-hash-lines-duplicates lines-ht)
 
-    (save-hashtable-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))
+    (save-hashtable-lines-as-svg  lines-ht (format nil "~apx" w) (format nil "~apx"  h))
     lines-ht))
 
 (defun get-image-circles (infile &key (outfile (change-extension infile "png")))
@@ -160,7 +160,9 @@ TODO Add default values.
 	 lines-ht)
     (when (get-debug-mode) (format t "Creating circles, image have ~a points" (hash-table-count ht)))
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
-    (find-circles ht (get-max-circle-diameter))
+
+    (save-hashtable-circles-as-svg (find-circles ht (get-max-circle-diameter)) 
+				   (format nil "~apx" w) (format nil "~apx"  h))
     ))
 
 (defun guess-format (image-path)

@@ -6,23 +6,27 @@
      (stroke-width :initarg :stroke-width :initform "1")
      (id           :initarg :id           :initform nil)
      (object-type  :initarg :object-type  :initform nil))
-  (:documentation "Common svg object"))
+  (:documentation "Common svg object."))
+
+(defgeneric to-svg (object)
+  (:documentation "Transform object to svg-format representation"))
 ;;------------------------------------------------------------------------------
 (defclass svg-line (svg-object)
   ((point1      :initarg :point1      :initform '(0 0))
    (point2      :initarg :point2      :initform '(1 1))
    (object-type :initform "line"))
-  (:documentation "Line svg object"))
+  (:documentation "Line svg object."))
 
 (defun make-svg-line (line &key (color "black") )
+  "Line is a list of 2 (or more) points.
+Format:
+'((x1 y1) (x2 y2))
+"
   (make-instance 'svg-line :point1 (first line) :point2 (second line) :stroke color))
-;;------------------------------------------------------------------------------
-(defgeneric to-svg (object)
-  (:documentation "Transform object to svg-format representation"))
 
 (defmethod to-svg ((object svg-line))
   (let* ((id (cond ((eq nil (slot-value object 'id)) "")
-		 (t (format nil "id=\"~a\" " (slot-value object 'id)))))
+		   (t (format nil "id=\"~a\" " (slot-value object 'id)))))
 	 (p1 (slot-value object 'point1))
 	 (p2 (slot-value object 'point2))
 	 (x1 (first  p1))
@@ -31,7 +35,39 @@
 	 (y2 (second p2)))
     (format nil "<line ~a x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\" stroke=\"~a\" stroke-width=\"~a\"/>~%" 
 	    id x1 y1 x2 y2 (slot-value object 'stroke) (slot-value object 'stroke-width))))
-  
+
+;;------------------------------------------------------------------------------
+(defclass svg-circle (svg-object)
+  ((center       :initarg :center       :initform '(0 0))
+   (radius       :initarg :radius       :initform 1)
+   (fill         :initarg :fill         :initform "black")
+   (fill-opacity :initarg :fill-opacity :initform 0)
+   (object-type  :initform "circle"))
+  (:documentation "Circle svg object."))
+
+(defun make-svg-circle (circle &key (color "black") (width 1) (fill "black") (fill-opacity 0))
+  "Circle is a list of radius nad center point.
+Format:
+'(radius (center-x center-y))
+"
+  (make-instance 'svg-circle 
+		 :radius       (first circle) 
+		 :center       (second circle)
+		 :stroke       color
+		 :stroke-width width
+		 :fill         fill
+		 :fill-opacity fill-opacity))
+
+(defmethod to-svg ((object svg-circle))
+  (let* ((id (cond ((eq nil (slot-value object 'id)) "")
+		   (t (format nil "id=\"~a\" " (slot-value object 'id)))))
+	 (center (slot-value object 'center))
+	 (radius (slot-value object 'radius)))
+    (format nil "<circle ~a cx=\"~a\" cy=\"~a\" r=\"~a\" stroke=\"~a\" stroke-width=\"~a\"  fill=\"~a\" fill-opacity=\"~a\"/>~%" 
+	    id (first center) (second center) radius (slot-value object 'stroke) (slot-value object 'stroke-width) (slot-value object 'fill) (slot-value object 'fill-opacity))))
+	 
+		   
+;;------------------------------------------------------------------------------  
 
 (defun render-svg-file (entities-list width height)
   (concatenate 'string
@@ -90,7 +126,7 @@ file-to-save is not resets!"))
 		   (namestring (slot-value manager 'file-to-save)))))
 
 ;;--------------------------------------------------------------------------------
-(defun save-hashtable-as-svg (ht width height &key (filename #p"out.svg"))
+(defun save-hashtable-lines-as-svg (ht width height &key (filename #p"out.svg"))
   (let ((mgr (create-svg-manager  width height :filename filename))
 	line
 	(lines 0))
@@ -101,8 +137,18 @@ file-to-save is not resets!"))
 	   (incf lines)
 	   (add-entity mgr (make-svg-line line :color "green"))))
     (when (get-debug-mode)
-      (format t "Total ~a lines pushed to svg~%" lines))
+      (format t "Total ~a lines pushed to svg.~%" lines))
     (flush-manager mgr)))
+
+(defun save-hashtable-circles-as-svg (circles width height &key (filename #p"circles.svg"))
+  (let ((mgr (create-svg-manager  width height :filename filename)))
+	(loop for circle being the hash-key of circles do
+	   (add-entity mgr (make-svg-circle circle :color "blue" :width 2)))
+	(when (get-debug-mode)
+	  (format t "Total ~a circles pushed to svg.~%" (hash-table-count circles)))
+	(flush-manager mgr)))
+
+				 
 
 ;; (defvar lines nil)
 ;; (push (make-svg-line '((5 5) (10 10) 4)) lines)
