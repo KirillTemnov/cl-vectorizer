@@ -117,26 +117,29 @@ and small offset from circle radius. This method merge such circles *putting all
 	(points-list (hashtable-keys-to-list points-hash))
 	circle-params
 	near-points-list
-	(i 0))
-    (dolist (p1 points-list)
-      (incf i)				;remove p1 after nd of loop?
-      (format t "tick ~a ...~%" i)
-      (setf near-points-list (get-near-points p1 points-list max-distance))
-      (dolist (p2 near-points-list)
-	(dolist (p3 near-points-list)
-	  (setf circle-params (get-circle-radius-and-center p1 p2 p3 max-distance))
-	  (when circle-params
-;;	    (format t "Circle params: ~a~%" circle-params)
-	    (let ((hash-val (gethash circle-params circles-hash)))
-	      (setf hash-val (push-to-list-if-not-present hash-val p1 p2 p3))
-	      (setf (gethash circle-params circles-hash) hash-val)))))
-;;    (format t "Circle params: ~a~%" circles-hash)))
+	p1 (i 0))
+    (loop while (< 0 (length points-list)) do
+	 (progn
+	   (incf i)				;remove p1 after nd of loop?
+	   (format t "tick ~a. List length = ~a...~%" i (length points-list))
+	   (setf p1 (first points-list))
+	   (setf points-list (cdr points-list))
+	   (setf near-points-list (get-near-points p1 points-list max-distance))
+	   (dolist (p2 near-points-list)
+	     (dolist (p3 near-points-list)
+	       (setf circle-params (get-circle-radius-and-center p1 p2 p3 max-distance))
+	       (when circle-params
+		 ;;	    (format t "Circle params: ~a~%" circle-params)
+		 (let ((hash-val (gethash circle-params circles-hash)))
+		   (setf hash-val (push-to-list-if-not-present hash-val p1 p2 p3))
+		   (setf (gethash circle-params circles-hash) hash-val)))))
+	   ;;    (format t "Circle params: ~a~%" circles-hash)))
 
-      (loop for circle-params being the hash-key of circles-hash do
-	   (let ((lst (gethash circle-params circles-hash)))
-	     (when (> 10 (length lst))	; change this to more comples condition
-	       (remhash circle-params circles-hash))))
-      (merge-hashed-circles circles-hash))
+	   (loop for circle-params being the hash-key of circles-hash do
+		(let ((lst (gethash circle-params circles-hash)))
+		  (when (> 10 (length lst))	; change this to more comples condition
+		    (remhash circle-params circles-hash))))
+	   (merge-hashed-circles circles-hash)))
 
 ;;    (format t "Hash size : ~a ~%" (hash-table-count circles-hash))
     circles-hash))
