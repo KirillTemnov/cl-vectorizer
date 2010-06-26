@@ -144,6 +144,3 @@ and small offset from circle radius. This method merge such circles *putting all
 ;;    (print-hash circles-hash)))
 
 
-	 
-
-
