@@ -12,8 +12,8 @@
 	   (when (and 
 		  (>= max-distance distance-to-pt)
 		  (< 0 distance-to-pt))
-	     (push pt near-points)))
-       near-points)))
+	     (push pt near-points))))
+       near-points))
 	      
 (defun get-circle-radius-and-center (p1 p2 p3 max-distance)
   "Get radius and coordinates of center point of circle, that build on points `p1`, `p2` and `p3`. If radius > `max-distance` / 2 than nil will returned, else return list (radius (cx cy))."
@@ -40,71 +40,74 @@
   ;; b = - -----------------------------------------
   ;;     2                  divisor
 
-  (let* ((x1 (first p1))
-	 (x2 (first p2))
-	 (x3 (first p3))
-	 (y1 (second p1))
-	 (y2 (second p2))
-	 (y3 (second p3))
-	 (divisor (-
-		   (* (- x2 x3) (- y1 y2))
-		   (* (- x1 x2) (- y2 y3))))
+;  (when (not (equal p2 p3))
+    (let* ((x1 (first p1))
+	   (x2 (first p2))
+	   (x3 (first p3))
+	   (y1 (second p1))
+	   (y2 (second p2))
+	   (y3 (second p3))
+	   (divisor (-
+		     (* (- x2 x3) (- y1 y2))
+		     (* (- x1 x2) (- y2 y3)))))
+      (if (= 0 divisor)
+	  nil	  
+	  (let* ((summand1 (-  ;;   (format t "divisor : ~a~%" divisor)
+			    (+ (expt x2 2) (expt y2 2))
+			    (expt x3 2)
+			    (expt y3 2)))
 
-	 (summand1 (- 
-		    (+ (expt x2 2) (expt y2 2))
-		    (expt x3 2)
-		    (expt y3 2)))
+		 (summand2 (-
+			    (+ (expt x1 2) (expt y1 2))
+			    (expt x2 2)
+			    (expt y2 2)))
+		 (a (/
+		     (-
+		      (* summand1 (- y1 y2))
+		      (* summand2 (- y2 y3)))
+		     (* 2 divisor)))
 
-	 (summand2 (-
-		    (+ (expt x1 2) (expt y1 2))
-		    (expt x2 2)
-		    (expt y2 2)))
-	 (a (/
-	     (-
-	      (* summand1 (- y1 y2))
-	      (* summand2 (- y2 y3)))
-	     (* 2 divisor)))
+		 (b (/
+		     (-
+		      (* summand2 (- x2 x3))
+		      (* summand1 (- x1 x2)))
+		     (* 2 divisor)))
+		 (radius (sqrt (+
+				(expt (- x1 a) 2)
+				(expt (- y1 b) 2)))))
+;;	    (list radius (list a b))))))
+	    (if (< (max (get-points-distance p1 p2) (get-points-distance p2 p3) (get-points-distance p3 p1) (* 2 radius)) max-distance)
+		nil
+		(list radius (list a b)))))))
 
-	 (b (/
-	     (-
-	      (* summand2 (- x2 x3))	      
-	      (* summand1 (- x1 x2)))
-	     (* 2 divisor)))
-	 (radius (sqrt (+
-			(expt (- x1 a) 2)
-			(expt (- y1 b) 2)))))
-    (if (> (max (get-points-distance p1 p2) (get-points-distance p2 p3) (get-points-distance p3 p1) max-distance))
-	nil
-	(list radius (list a b)))))
-
-(defun find-circles (hash-points max-distance)
+(defun find-circles (points-hash max-distance)
   "Find circles by Hough transformation method."
   (let ((circles-hash (make-hash-table :test 'equal))
-	(points-hash (hashtable-keys-to-list hash-points))
+	(points-list (hashtable-keys-to-list points-hash))
 	circle-params
+	near-points-list
 	(i 0))
-    (dolist (p1 points-hash)
+    (dolist (p1 points-list)
       (incf i)
       (format t "tick ~a ...~%" i)
-      (dolist (p2 points-hash)
-	(dolist (p3 points-hash)
-	  (when (and
-		 (not (equal p1 p2))
-		 (not (equal p2 p3))
-		 (not (equal p3 p1)))
-	    (setf circle-params (get-circle-radius-and-center p1 p2 p3 max-distance))
-	    (when circle-params
-	      (format t "Circle params: ~a~%" circle-params)
-	      (let ((hash-val (gethash circle-params circles-hash)))
-		(if hash-val
-		    (push (list p1 p2 p3) hash-val)
-		    (setf hash-val (list (list p1 p2 p3))))
-		(setf (gethash circle-params circles-hash) hash-val)))))))
-    (if circle-params 
-	(print-hash circle-params)
-	(format t "Circle params are empty~%"  )))
-;;    (format t "~%~%Points: ~a" (hashtable-keys-to-list points-hash))))
-;;    (loop for point being the hash-key of hash-key do
+      (setf near-points-list (get-near-points p1 points-list max-distance))
+      (dolist (p2 near-points-list)
+	(dolist (p3 near-points-list)
+	  (setf circle-params (get-circle-radius-and-center p1 p2 p3 max-distance))
+	  (when circle-params
+;;	    (format t "Circle params: ~a~%" circle-params)
+	    (let ((hash-val (gethash circle-params circles-hash)))
+	      (if hash-val
+		  (push (list p1 p2 p3) hash-val)
+		  (setf hash-val (list (list p1 p2 p3))))
+;;	      (format t "Hash val : ~a~%" hash-val)
+	      (setf (gethash circle-params circles-hash) hash-val))))))
+;;    (format t "Circle params: ~a~%" circles-hash)))
+    (print-hash circles-hash)))
+    ;; (if circle-params 
+    ;; 	(print-hash circle-params)
+    ;; 	(format t "Circle params are empty~%"  ))))
+
 	 
 
 

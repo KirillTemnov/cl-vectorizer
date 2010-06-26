@@ -127,6 +127,8 @@
 (setf (getf *settings* :line-search-radius) 4)
 
 (setf (getf *settings* :max-noise-line-length) 3)
+
+(setf (getf *settings* :max-circle-diameter) 10)
 ;;------------------------------------------------------------------------------
 ;; accessors 
 ;;-----------------------------------------------------------------------------
@@ -199,3 +201,7 @@ abc
 (property max-noise-line-length
 	  :set-docstring "Set maximal length of noise lines."
 	  :get-docstring "Get maximal length of noise lines.")
+
+(property max-circle-diameter
+	  :set-docstring "Set maximum diameter for circles, that will be searched by Hough algorythm."
+	  :get-docstring "Get maximum diameter for circles, that will be searched by Hough algorythm.")

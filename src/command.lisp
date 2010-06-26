@@ -160,7 +160,7 @@ TODO Add default values.
 	 lines-ht)
     (when (get-debug-mode) (format t "Creating circles, image have ~a points" (hash-table-count ht)))
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
-    (find-circles ht 10)
+    (find-circles ht (get-max-circle-diameter))
     ))
 
 (defun guess-format (image-path)
