@@ -83,16 +83,7 @@
 Returns average circle (average center and average radius)."
   (list (avg (first circle1) (first circle2))
   	(list (round (avg (first (second circle1)) (first (second circle2))))
-  	      (round (avg (second (second circle1)) (second (second circle2)))))))
-
-;;(merge-two-circles '(20.554804 (184 132)) '(21.107033 (47453/256 33893/256)))
-
-(defun floor-circle (circle)
-  "Floor (rounds) circle values."
-  (list (round (first circle))
-	(list (round (first (second circle)))
-	      (round (second (second circle))))))
-	       
+  	      (round (avg (second (second circle1)) (second (second circle2)))))))	       
 
 (defun find-similar-circles (circle circles-hash)
   "Find circles, similar to `circle` by radius and center, inside `circles-hash`."  
