@@ -307,3 +307,20 @@ Example:
       (push i list)))
   list)
 
+(defun merge-lists-remove-duplicates (list1 &rest lists)
+  "Merge two lists and remove duplicates from resulting list.
+Example:
+
+ (let ((l1 '(1 2 3))
+      (l2 '(a b c))
+      (l3 '(q1 w2 r4)))
+  (merge-lists-remove-duplicates l1 l2 l3 '(ZZZ zz z)))
+
+=> (R4 W2 Q1 C B A 1 2 3)"
+  (dolist (list2 lists)
+    (dolist (i list2)
+      (when (not (member i list1 :test #'equal))
+	(push i list1))))
+  list1)
+
+

@@ -40,7 +40,6 @@
   ;; b = - -----------------------------------------
   ;;     2                  divisor
 
-;  (when (not (equal p2 p3))
     (let* ((x1 (first p1))
 	   (x2 (first p2))
 	   (x3 (first p3))
@@ -98,8 +97,11 @@
 		(similar-circles? circle cur-circle))
 
 	   (let ((pts (gethash circle circles-hash)) (new-pts (gethash cur-circle circles-hash)))
-
-	     (setf (gethash circle circles-hash) (push-to-list-if-not-present pts new-pts))
+	     (setf new-pts (merge-lists-remove-duplicates pts new-pts))
+	     (when (get-debug-mode)
+	       (format t "Merge circles. ~%Old points ~a~%" pts)
+	       (format t "New Points ~a ~%" new-pts))
+	     (setf (gethash circle circles-hash) new-pts)
 	     (remhash cur-circle circles-hash))))))
 
 
@@ -121,7 +123,8 @@ and small offset from circle radius. This method merge such circles *putting all
     (loop while (< 0 (length points-list)) do
 	 (progn
 	   (incf i)				;remove p1 after nd of loop?
-	   (format t "tick ~a. List length = ~a...~%" i (length points-list))
+	   (when (get-debug-mode)
+	     (format t "tick ~a. List length = ~a...~%" i (length points-list)))
 	   (setf p1 (first points-list))
 	   (setf points-list (cdr points-list))
 	   (setf near-points-list (get-near-points p1 points-list max-distance))

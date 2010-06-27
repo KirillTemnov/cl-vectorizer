@@ -152,7 +152,7 @@ TODO Add default values.
 
     (setf manager (hashtable-lines-to-svg-manager lines-ht manager))
     
-    (flush-manager manager "out.svg")
+    (flush-manager manager #p"out.svg")
     
     lines-ht))
 
@@ -179,7 +179,7 @@ TODO Add default values.
     (hashtable-circles-to-svg-manager circles-hash manager) 
 
     (add-entity manager (make-svg-image outfile))
-    (flush-manager manager "out.svg")))
+    (flush-manager manager #p"out.svg")))
 
 (defun guess-format (image-path)
   "Return format of image based on it's DPI.
