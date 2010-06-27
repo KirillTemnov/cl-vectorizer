@@ -307,6 +307,11 @@ Example:
       (push i list)))
   list)
 
+(defun avg (&rest arguments)
+  "Average value of list arguments."
+  (/ (apply #'+ arguments) (length arguments)))
+
+
 (defun merge-lists-remove-duplicates (list1 &rest lists)
   "Merge two lists and remove duplicates from resulting list.
 Example:

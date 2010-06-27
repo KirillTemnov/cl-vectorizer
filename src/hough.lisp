@@ -51,7 +51,7 @@
 		     (* (- x1 x2) (- y2 y3)))))
       (if (= 0 divisor)
 	  nil	  
-	  (let* ((summand1 (-  ;;   (format t "divisor : ~a~%" divisor)
+	  (let* ((summand1 (- 
 			    (+ (expt x2 2) (expt y2 2))
 			    (expt x3 2)
 			    (expt y3 2)))
@@ -74,18 +74,32 @@
 		 (radius (sqrt (+
 				(expt (- x1 a) 2)
 				(expt (- y1 b) 2)))))
-;;	    (list radius (list a b))))))
 	    (if (< (max (get-points-distance p1 p2) (get-points-distance p2 p3) (get-points-distance p3 p1) (* 2 radius)) max-distance)
 		nil
-		(list radius (list (floor a) (floor b))))))))
+		(list radius (list (round a) (round b))))))))
 
+(defun merge-two-circles (circle1 circle2)
+  "Merge two circles in one. Circle here is a list: (radius (center-x center-y)).
+Returns average circle (average center and average radius)."
+  (list (avg (first circle1) (first circle2))
+  	(list (round (avg (first (second circle1)) (first (second circle2))))
+  	      (round (avg (second (second circle1)) (second (second circle2)))))))
+
+;;(merge-two-circles '(20.554804 (184 132)) '(21.107033 (47453/256 33893/256)))
+
+(defun floor-circle (circle)
+  "Floor (rounds) circle values."
+  (list (round (first circle))
+	(list (round (first (second circle)))
+	      (round (second (second circle))))))
+	       
 
 (defun find-similar-circles (circle circles-hash)
-  "Find circles, similar to `circle` by radius and center, inside `circles-hash`."
+  "Find circles, similar to `circle` by radius and center, inside `circles-hash`."  
   (flet ((similar-circles? (circ1 circ2)
 	   ;; Check if `circ1` and `circ2` have approximately the same 
 	   ;; radius and center point.
-	   (let ((center-delta 5)       ; max center points distance is 5 points
+	   (let ((center-delta 5)       ; max center points distance is 4 points
 		 (delta-r 2))			; radius may vary in 2 points
 	     (and
 	      (>= delta-r (- (first circ1) (first circ2)))
@@ -96,13 +110,17 @@
 		(not (equal circle cur-circle))
 		(similar-circles? circle cur-circle))
 
-	   (let ((pts (gethash circle circles-hash)) (new-pts (gethash cur-circle circles-hash)))
-	     (setf new-pts (merge-lists-remove-duplicates pts new-pts))
+	   (let* ((pts (gethash circle circles-hash))
+		  (pts2 (gethash cur-circle circles-hash))
+		  (new-pts (merge-lists-remove-duplicates pts pts2)))
 	     (when (get-debug-mode)
-	       (format t "Merge circles. ~%Old points ~a~%" pts)
-	       (format t "New Points ~a ~%" new-pts))
-	     (setf (gethash circle circles-hash) new-pts)
-	     (remhash cur-circle circles-hash))))))
+	       (format t "Merge circles. ~%First: ~a~%" circle)
+	       (format t "Second ~a ~%" cur-circle))
+
+	     ;; remove both circles, add merged circle
+	     (remhash circle circles-hash)
+	     (remhash cur-circle circles-hash)
+	     (setf (gethash (merge-two-circles circle cur-circle) circles-hash) new-pts))))))
 
 
 (defun merge-hashed-circles (circles-hash)
@@ -122,7 +140,7 @@ and small offset from circle radius. This method merge such circles *putting all
 	p1 (i 0))
     (loop while (< 0 (length points-list)) do
 	 (progn
-	   (incf i)				;remove p1 after nd of loop?
+	   (incf i)
 	   (when (get-debug-mode)
 	     (format t "tick ~a. List length = ~a...~%" i (length points-list)))
 	   (setf p1 (first points-list))
@@ -144,9 +162,5 @@ and small offset from circle radius. This method merge such circles *putting all
 		    (remhash circle-params circles-hash))))
 	   (merge-hashed-circles circles-hash)))
 
-;;    (format t "Hash size : ~a ~%" (hash-table-count circles-hash))
     circles-hash))
-;;    ))
-;;    (print-hash circles-hash)))
-
 
