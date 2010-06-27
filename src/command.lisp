@@ -165,18 +165,29 @@ TODO Add default values.
 	 (ht (thin-image-hash (image-to-hashtable image)))
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
 	 circles-hash
-	 lines-ht)
-    (when (get-debug-mode) (format t "Creating circles, image have ~a points" (hash-table-count ht)))
+	 lines-ht
+	 points-ht)
+
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
 
+    (setf lines-ht (merge-near-lines (vectorize-hash ht)))
 
-    (setf circles-hash (find-circles ht (get-max-circle-diameter)))
+    (setf points-ht (hashlines-to-hashpoints lines-ht))
+    ;; test
+
+    (save-image (hashtable-to-image points-ht w h) (get-out-path outfile))
+
+    (when (get-debug-mode) 
+      (format t "Creating circles, image have ~a points" (hash-table-count points-ht)))
+
+    
+    (setf circles-hash (find-circles points-ht (get-max-circle-diameter)))
 
 
     (loop for circle being the hash-key of circles-hash do
-	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
+    	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
 
-    (hashtable-circles-to-svg-manager circles-hash manager) 
+    (hashtable-circles-to-svg-manager circles-hash manager)
 
     (add-entity manager (make-svg-image outfile))
     (flush-manager manager #p"out.svg")))

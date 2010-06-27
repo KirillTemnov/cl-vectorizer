@@ -82,14 +82,6 @@
 ;;------------------------------------------------------------------------------
 ;; convertion options
 ;;--------------------------------------
-;; sharpen
-(setf (getf *settings* :sharpen) "3x3")
-;; threshold
-(setf (getf *settings* :threshold) "60%")
-;; colors 2
-(setf (getf *settings* :colors) "2")
-
-
 
 ;; temp filename
 (setf (getf *settings* :temp-png-filename) #p"temp.png")
@@ -112,11 +104,17 @@
 ;; debug flag
 (setf (getf *settings* :debug-mode) nil)
 
+;; colors 2
+(setf (getf *settings* :colors) "2")
+
+;; sharpen
+(setf (getf *settings* :sharpen) "3x3")
+
+
 ;; threshold for vectorization
 (setf (getf *settings* :threshold) 20)
 ;; threshold for binarization
 (setf (getf *settings* :threshold-bin) "65%")
-
 
 (setf (getf *settings* :max-angle-on-line) 15)
 
@@ -134,14 +132,13 @@
 ;;-----------------------------------------------------------------------------
 (defun get-identify-path nil
   (getf *settings* :identify))
-;;(defun +identify-path+ nil 
+
 (defun get-convert-path nil
   (getf *settings* :convert))
 
 (defun get-temp-png-file nil
   "Get path of temporary png file."
   (merge-pathnames (getf *settings* :working-dir-out) (getf *settings* :temp-png-filename)))
-
 
 
 (defun concat-atoms (&rest args)
@@ -153,7 +150,7 @@ abc
 "
   (intern (apply #'(lambda (&rest args) 
 		     (with-output-to-string (s) 
-		       (dolist (a args) (princ a s)))) 
+		       (dolist (a args) (princ a s))))
 		 args)))
 
 ;; macro for creating set- and get- properties
@@ -165,6 +162,10 @@ abc
      (defun ,(concat-atoms 'get- name) nil 
        ,get-docstring
        (getf *settings* ,(intern (symbol-name name) :keyword)))))
+
+(macroexpand-1 '(property threshold 
+	  :set-docstring "Set threshold for vectorization (int value)."
+	  :get-docstring "Get threshold for vectorization."))
 
 (property threshold 
 	  :set-docstring "Set threshold for vectorization (int value)."
@@ -203,5 +204,5 @@ abc
 	  :get-docstring "Get maximal length of noise lines.")
 
 (property max-circle-diameter
-	  :set-docstring "Set maximum diameter for circles, that will be searched by Hough algorythm."
-	  :get-docstring "Get maximum diameter for circles, that will be searched by Hough algorythm.")
+	  :set-docstring "Set maximum diameter for circles, that will be searched by Hough algorithm."
+	  :get-docstring "Get maximum diameter for circles, that will be searched by Hough algorithm.")

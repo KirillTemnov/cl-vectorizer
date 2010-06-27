@@ -274,6 +274,30 @@ Example:
   (dolist (i list)
     (remhash i hash)))
 
+(defun center-point (line)
+  "Calculates center point of line (section).
+Example:
+ (center-point '((10 10) (20 20)))
+=> '(15 15)"
+  (let ((p1 (first line))
+	(p2 (second line)))
+    (list (round (/ (+ (first p1) (first p2)) 2))
+	  (round (/ (+ (second p1) (second p2)) 2)))))
+
+
+(defun hashlines-to-hashpoints (hash-lines)
+  "Extract points from `hash-lines` and return its as hashtable with points as keys."
+  (let ((hash-points (make-hash-table :test #'equal)))
+    (maphash #'(lambda (key line)
+		 (when (line? line)
+		   (setf (gethash (first line) hash-points) 1)
+		   (setf (gethash (second line) hash-points) 1)
+		   (setf (gethash (center-point line) hash-points) 1)))
+	     hash-lines)
+    hash-points))
+  
+
+
 ;; (defun get-other-line-point (line point)
 ;;   "Return another line point."
 ;;   (cond

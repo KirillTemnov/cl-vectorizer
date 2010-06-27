@@ -149,9 +149,12 @@ and small offset from circle radius. This method merge such circles *putting all
 
 	   (loop for circle-params being the hash-key of circles-hash do
 		(let ((lst (gethash circle-params circles-hash)))
-		  (when (> 10 (length lst))	; change this to more comples condition
+		  (when (> 5 (length lst))	; change this to more complex condition
 		    (remhash circle-params circles-hash))))
 	   (merge-hashed-circles circles-hash)))
 
+    (loop for circle being the hash-key of circles-hash do
+          (when (> 10 (length (gethash circle circles-hash)))
+	    (remhash circle circles-hash)))
     circles-hash))
 
