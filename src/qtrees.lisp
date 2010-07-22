@@ -15,7 +15,7 @@
 (defconstant +orients+ '(nw ne sw se))
 ;; use this color, because color constants in packages.lisp differ
 (defconstant +white-color+ 0)
-(defconstant +black-color+ 0)
+(defconstant +black-color+ 1)
 
 
 ;; internal clases and functions
@@ -49,16 +49,15 @@
 (defgeneric create-tree (image-hash width height)
   (:documentation "Create instance of qtree class."))
 
-(defgeneric dump-tree (tree, filename)
+(defgeneric dump-tree (tree filename)
   (:documentation "Dump tree to a file."))
 
-(defgeneric get-leaf (tree, path)
+(defgeneric get-leaf (tree path)
   (:documentation "Get tree element by path."))
 
-(defgeneric add-pixel (tree, root, pixel)
-  (:documentation "Add pixel to tree."))
+(defgeneric add-black-pixel (root pixel)
+  (:documentation "Add black pixel to tree."))
 
-(max 3 4)
 ;;--------------------------------------------------------------------------------
 (defun get-tree-size (value &optional (size 2)) ; todo move to flet ?
   "Get minimum size, that greater or equal then value.
@@ -82,7 +81,57 @@ Example:
 					:root-element (make-instance 'qtree-element
 								     :size size
 								     :level 1))))
-  (loop for point being the hash-key of image-hash do
-        ;;code here
-        )
+    (loop for point being the hash-key of image-hash do
+	 (add-black-pixel (slot-value qtree-instance 'root-element) point))
+
+    qtree-instance))
+
+(defmethod add-black-pixel ((root qtree-element) pixel)
+    (cond
+      ((= 1 (slot-value root 'size))	; hit the bottom
+       (format t "Add pixel: ~a ~%" pixel)
+       (setf (slot-value root 'color) +black-color+))
+
+      (t
+       (when (eq nil (slot-value root 'childs))
+	 (setf (slot-value root 'childs) '(nil nil nil nil))) ;initialize nil leafs
+
+       (let ((x (first  pixel))
+	     (y (second pixel))
+	     (half-size (/ (slot-value root 'size) 2))
+	     (index 3))
+
+	 (cond
+	   ((and			; nw - first half
+	     (< x half-size)
+	     (< y half-size))
+	    (setf index 0))
+
+	   ((and			; ne - second half
+	     (>= x half-size)
+	     (<  y half-size))
+	    (setf index 1)
+	    (setf x (- half-size x)))
+
+	   ((and			; sw - third half
+	     (<  x half-size)
+	     (>= y half-size))
+	    (setf index 2)
+	    (setf y (- half-size y)))
+
+	   (t				; se fourth half, index already set in let
+	    (setf x (- half-size x))
+	    (setf y (- half-size y))))
+
+	   (when (eq nil (nth index (slot-value root 'childs)))
+	     (setf (nth index (slot-value root 'childs))
+		   (make-instance 'qtree-element
+				  :size half-size
+				  :level (1+ (slot-value root 'level))
+				  :parent root
+				  :color +white-color+
+				  :orient index)))
+
+	   (add-black-pixel (nth index (slot-value root 'childs)) (list x y))))))
+
 
