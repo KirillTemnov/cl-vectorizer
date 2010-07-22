@@ -13,16 +13,16 @@
 		  (or (position #\Tab string) (1- (length string))))))
     (cond
       ((zerop (length string)) nil)
-      ((or (char= #\Space (aref string 0)) (char= #\Tab (aref string 0)))     
+      ((or (char= #\Space (aref string 0)) (char= #\Tab (aref string 0)))
        (tokenize (subseq string 1)))
       ((and (numberp pos) (plusp pos))
        (cons (string-trim '(#\Space #\Tab) (subseq string 0 (1+ pos)))
-	     (tokenize (subseq string (1+ pos)))))      
+	     (tokenize (subseq string (1+ pos)))))
       (t (list (string-trim '(#\Space #\Tab) string))))))
 
 (defun write-to-file (content filename)
   "Write content to file (filename). Overwrite existing file"
-  (with-open-file (stream  filename 
+  (with-open-file (stream  filename
 			   :direction :output
 			   :if-exists :supersede
 			   :if-does-not-exist :create)
@@ -31,7 +31,7 @@
 
 (defun mapconcat (func elems)
   "Execute function on each of elems and concatenate all results in a string."
-  (cond 
+  (cond
     ((eq nil elems) "")
     (t
      (concatenate 'string
@@ -73,7 +73,7 @@ Creates OUT working directory, if it doen't exist."
 
 (defun change-extension (filename new-extension)
   "Change extension of filename.
-Example: 
+Example:
   (change-extension #p\"test-file.name\" \"ext\")
   -> #p\"test-file.ext\"
 "
@@ -83,8 +83,8 @@ Example:
 
 (defun change-filename (filename new-filename)
   "Change name of file and keep extension"
-  (make-pathname :name new-filename 
-		 :type (pathname-type filename) 
+  (make-pathname :name new-filename
+		 :type (pathname-type filename)
 		 :directory (pathname-directory filename)))
 
 (defun add-to-filename (filename add-symbols)
@@ -96,9 +96,9 @@ Example:
   #P/tmp/test5.txt
 "
   (make-pathname :name (format nil "~a~a" (pathname-name filename) add-symbols)
-		 :type (pathname-type filename) 
+		 :type (pathname-type filename)
 		 :directory (pathname-directory filename)))
-		 
+
 
 (defun load-image (path)
   "Load image from file"
@@ -132,7 +132,7 @@ Example:
     (loop for i from 0 to (1- width) do
 	 (loop for j from 0 to (1- height) do
 	      (setf hash-key (list i j))
-	      (setf (aref image j i 0) 
+	      (setf (aref image j i 0)
 		    (cond
 		      ((in-hash hash-key hashtable) color)
 		      (t bg-color)))))
@@ -199,7 +199,7 @@ Example:
     ap-list))
 
 (defun should-delete-point? (point hash-points)
-  "Check if point should be deleted. 
+  "Check if point should be deleted.
    This check consists of three parts:
    1) Point have 0 neibhours.
    2) Point have 2 neibhours and this neibhours defined by one of four masks:
@@ -209,18 +209,18 @@ Example:
        p7  p6  p5
 
        Masks (x2):
-       0  1  0    0  1  0    0  0  0    0  0  0  
-       1  1  0    0  1  1    0  1  1    1  1  0  
-       0  0  0    0  0  0    0  1  0    0  1  0  
+       0  1  0    0  1  0    0  0  0    0  0  0
+       1  1  0    0  1  1    0  1  1    1  1  0
+       0  0  0    0  0  0    0  1  0    0  1  0
 
        Masks (x3):
-       1  1  0    0  1  0    0  1  0    0  1  1  
-       0  1  1    1  1  0    0  1  1    1  1  0 
-       0  0  0    1  0  0    0  0  1    0  0  0 
+       1  1  0    0  1  0    0  1  0    0  1  1
+       0  1  1    1  1  0    0  1  1    1  1  0
+       0  0  0    1  0  0    0  0  1    0  0  0
 
-       0  0  0    0  0  1    1  0  0    0  0  0 
-       1  1  0    0  1  1    1  1  0    0  1  1  
-       0  1  1    0  1  0    0  1  0    1  1  0 
+       0  0  0    0  0  1    1  0  0    0  0  0
+       1  1  0    0  1  1    1  1  0    0  1  1
+       0  1  1    0  1  0    0  1  0    1  1  0
 
    Point should be deleted of one of conditions performed.
 "
@@ -295,7 +295,7 @@ Example:
 		   (setf (gethash (center-point line) hash-points) 1)))
 	     hash-lines)
     hash-points))
-  
+
 
 
 ;; (defun get-other-line-point (line point)

@@ -2,9 +2,9 @@
 
 (defpackage #:cl-vectorizer-asd
   (:use #:cl #:asdf))
- 
+
 (in-package #:cl-vectorizer-asd)
- 
+
 (defsystem #:cl-vectorizer
   :name "cl-vectorizer"
   :author "Kirill Temnov <allselead@gmail.com>"

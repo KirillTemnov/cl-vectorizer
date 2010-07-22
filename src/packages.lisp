@@ -17,7 +17,7 @@
 	   #:thin-image-file
 	   #:version
 	   #:set-working-dir-in
-	   #:set-working-dir-out	   
+	   #:set-working-dir-out
 	   #:+sheet-width+
 	   #:+sheet-height+
    ))
@@ -64,21 +64,21 @@
 ;; add default settings here
 
 ;; working dir for input images
-(setf (getf *settings* :working-dir-in) 
-      (merge-pathnames 
+(setf (getf *settings* :working-dir-in)
+      (merge-pathnames
        #p"in/"
-      #+sbcl *DEFAULT-PATHNAME-DEFAULTS* 
-      #+allegro CURRENT-DIRECTORY 
+      #+sbcl *DEFAULT-PATHNAME-DEFAULTS*
+      #+allegro CURRENT-DIRECTORY
       #+cmucl DEFAULT-DIRECTORY))
 
 ;; working dir for output images
-(setf (getf *settings* :working-dir-out)       
+(setf (getf *settings* :working-dir-out)
       (merge-pathnames
        #p"out/"
-      #+sbcl  *DEFAULT-PATHNAME-DEFAULTS*  
-      #+allegro CURRENT-DIRECTORY 
+      #+sbcl  *DEFAULT-PATHNAME-DEFAULTS*
+      #+allegro CURRENT-DIRECTORY
       #+cmucl DEFAULT-DIRECTORY))
-  
+
 ;;------------------------------------------------------------------------------
 ;; convertion options
 ;;--------------------------------------
@@ -88,13 +88,13 @@
 ;;(setf (getf *settings* :temp-png-file) #p"temp.png")
 
 ;; works for Mac + Linux
-(setf (getf *settings* :identify) 
+(setf (getf *settings* :identify)
       (cond
 	((probe-file #p"/usr/local/bin/identify")  #p"/usr/local/bin/identify")
 	((probe-file #p"/opt/local/bin/identify")  #p"/opt/local/bin/identify")
 	((probe-file #p"/usr/bin/identify") #p"/usr/bin/identify")
 	(t nil)))
-		     
+
 (setf (getf *settings* :convert)
       (cond
 	((probe-file #p"/usr/local/bin/convert")  #p"/usr/local/bin/convert")
@@ -127,8 +127,24 @@
 (setf (getf *settings* :max-noise-line-length) 3)
 
 (setf (getf *settings* :max-circle-diameter) 10)
+
+
+;; list of radius and max angle between points for this circles
+;; ((max-radius1 max-angle1) (max-radius2 max-angle2) ... (max-radiusN max-angleN))
+(setf (getf *settings* :angles-step-for-circle)
+      '((10 30)
+	(20 28)
+	(30 25)
+	(40 20)
+	(50 18)
+	(100 15)
+	(200 12)
+	(300 10)
+	(500 8)
+	(1000 5)
+	(10000 3)))
 ;;------------------------------------------------------------------------------
-;; accessors 
+;; accessors
 ;;-----------------------------------------------------------------------------
 (defun get-identify-path nil
   (getf *settings* :identify))
@@ -148,8 +164,8 @@ Example:
 
 abc
 "
-  (intern (apply #'(lambda (&rest args) 
-		     (with-output-to-string (s) 
+  (intern (apply #'(lambda (&rest args)
+		     (with-output-to-string (s)
 		       (dolist (a args) (princ a s))))
 		 args)))
 
@@ -159,23 +175,19 @@ abc
      (defun ,(concat-atoms 'set- name) (value)
        ,set-docstring
        (setf (getf *settings* ,(intern (symbol-name name) :keyword)) value))
-     (defun ,(concat-atoms 'get- name) nil 
+     (defun ,(concat-atoms 'get- name) nil
        ,get-docstring
        (getf *settings* ,(intern (symbol-name name) :keyword)))))
 
-(macroexpand-1 '(property threshold 
-	  :set-docstring "Set threshold for vectorization (int value)."
-	  :get-docstring "Get threshold for vectorization."))
-
-(property threshold 
+(property threshold
 	  :set-docstring "Set threshold for vectorization (int value)."
 	  :get-docstring "Get threshold for vectorization.")
-	  
+
 (property threshold-bin
 	  :set-docstring "Set threshold for image binarization (string with persent sign)."
 	  :get-docstring "Get threshold for image binarization.")
 
-(property working-dir-in 
+(property working-dir-in
 	  :set-docstring "Set working dir for input images."
 	  :get-docstring "Get working dir for input images.")
 
@@ -195,7 +207,7 @@ abc
 	  :set-docstring "Set maximum slope angle. If slope angle between 2 lines less than slope angle, they are parallel."
 	  :get-docstring "Get maximum slope angle.")
 
-(property line-search-radius 
+(property line-search-radius
 	  :set-docstring "Set radius in points for searching near lines."
 	  :get-docstring "Get radius for searching near lines.")
 
@@ -206,3 +218,7 @@ abc
 (property max-circle-diameter
 	  :set-docstring "Set maximum diameter for circles, that will be searched by Hough algorithm."
 	  :get-docstring "Get maximum diameter for circles, that will be searched by Hough algorithm.")
+
+(property angles-step-for-circle
+	  :set-docstring "Set angles for analyzing circles and arcs."
+	  :get-docstring "Get angles for analyzing circles and arcs.")

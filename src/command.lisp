@@ -8,8 +8,8 @@
 (defun run-command-return-output (command &key (arguments nil) (input nil))
   "Run shell command and return it's ousput as a tokens string."
   (let ((results-list nil))
-    (with-open-stream (out 
-		       (sb-ext:process-output 
+    (with-open-stream (out
+		       (sb-ext:process-output
 			(sb-ext:run-program command arguments :input input :output :stream)))
       (loop :for line = (read-line out nil nil)
 	 :while line
@@ -17,13 +17,13 @@
     results-list))
 
 (defun get-image-info (path)
-  "Get information about image. 
+  "Get information about image.
  `path` is a full path to image.
 
 Return plist:
   (:width int-value :height int-value :xresolution int-value :yresolution int-value)
 Resolution is in DPI"
-  (let* ((image-plist nil) 
+  (let* ((image-plist nil)
 	(str-data (first (last (run-command-return-output (get-identify-path) :arguments (list "-format" "'%[width] %[height] %[xresolution] %[yresolution]'" path)))))
 	(str-data-formated (str-list-to-int-list (subseq str-data 1 (- (length str-data) 1)))))
     (setf (getf image-plist :width) (first str-data-formated))
@@ -46,7 +46,7 @@ Examples:
  (16 (200 500)) (17 (400 500)) (18 (600 500)))
 
 > (cut-image-sizes 800 600 1000 1000)
- 
+
  ((0 (0 0)))
 "
   (let ((crop-list '((0 (0 0)))))
@@ -55,9 +55,9 @@ Examples:
 	  (i 0) l (y 0))
       (when (= (rem width crop-width) 0) (decf times-x))
       (when (= (rem height crop-heigth) 0) (decf times-y))
-      (loop 
+      (loop
 	 (when (> y times-y) (return crop-list))
-	 (setf l (loop for x from 1 to times-x collecting 
+	 (setf l (loop for x from 1 to times-x collecting
 		      (list (+ x i) (list (* crop-width x) (* y crop-heigth)))))
 	 (incf i times-x)
 	 (setf crop-list (append crop-list l))
@@ -71,14 +71,14 @@ Converted files moved to output folder.
   (let* ((info (get-image-info (namestring (get-in-path source-filename))))
 	 (image-sizes (cut-image-sizes  (getf info :width) (getf info :height) +sheet-width+ +sheet-height+)))
     (dolist (image-size image-sizes)
-      (convert-image source-filename 
-		     :dest-filename 
-		     (change-extension 
-		      (add-to-filename source-filename 
+      (convert-image source-filename
+		     :dest-filename
+		     (change-extension
+		      (add-to-filename source-filename
 				       (format nil "-~a" (first image-size))) "png")
 		     :options   (list "-crop"
 				      (format nil "~ax~a+~a+~a" +sheet-width+ +sheet-height+ (first (second image-size)) (second (second image-size))))))))
-	 
+
 
 (defun convert-image (source-filename  &key (dest-filename source-filename) options)
   "Convert one image to anther via imagemagick.
@@ -91,7 +91,7 @@ Options:
 TODO Add default values.
 "
   (run-command (get-convert-path)
-	       :arguments 
+	       :arguments
 	       (concatenate 'list (list (namestring (get-in-path source-filename)))
 			    options
 			    (list (namestring (get-out-path dest-filename))))))
@@ -108,10 +108,10 @@ TODO Add default values.
 	 (h (getf info :height))
 	 (save-filename (or dest-filename (change-extension image-name "png"))))
     (when (and 				; if no info about dpi is provided
-	   (not (eq nil x-dpi))		; image will not be resized 
+	   (not (eq nil x-dpi))		; image will not be resized
 	   (not	(eq nil y-dpi))
-	   (and 
-	    (> x-dpi +min-dpi+ ) 
+	   (and
+	    (> x-dpi +min-dpi+ )
 	    (> y-dpi +min-dpi+)))
 	(setf w (round (/ w (/ x-dpi +min-dpi+))))
 	(setf h (round (/ h (/ x-dpi +min-dpi+))))
@@ -123,7 +123,7 @@ TODO Add default values.
 				  "-colors" (getf *settings* :colors)
 				  "-adaptive-resize" (format nil "~sx~s" w h)))
     save-filename))
-    
+
 
 (defun thin-image-file (infile &key (outfile (change-extension infile "png")))
   "Thin image in one file and save to another."
@@ -134,26 +134,26 @@ TODO Add default values.
 	 (ht (thin-image-hash (image-to-hashtable image)))
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
 	 lines-ht)
-	 
+
     (when (get-debug-mode) (format t "format image ~a ... ~%"  (get-out-path outfile)))
 
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
 
-    (when (get-debug-mode) 
+    (when (get-debug-mode)
       (format t "vectorize ... ~%" )
       (format t "Total lines ~a ~%" (hash-table-count ht ))
       )
-    
+
     (setf lines-ht (merge-near-lines (vectorize-hash ht)))
-    
+
     (when (get-debug-mode) (format t "export to svg ... ~%"))
     (remove-hash-lines-duplicates lines-ht)
-    
+
 
     (setf manager (hashtable-lines-to-svg-manager lines-ht manager))
-    
+
     (flush-manager manager #p"out.svg")
-    
+
     lines-ht))
 
 (defun get-image-circles (infile &key (outfile (change-extension infile "png")))
@@ -177,13 +177,15 @@ TODO Add default values.
 
     (save-image (hashtable-to-image points-ht w h) (get-out-path outfile))
 
-    (when (get-debug-mode) 
+    (when (get-debug-mode)
       (format t "Creating circles, image have ~a points" (hash-table-count points-ht)))
 
-    
+
     (setf circles-hash (find-circles points-ht (get-max-circle-diameter)))
 
+    (analyse-circles circles-hash)
 
+    ;; show points on image
     (loop for circle being the hash-key of circles-hash do
     	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
 
@@ -199,10 +201,10 @@ list of formats: 'A0 'A1 'A2 'A3 'A4 'A5 'A6 'A7"
 
 (defun guess-format-by-info (info)
   "return format of image, described with info plist
-looks like: (:width int-value :height int-value 
+looks like: (:width int-value :height int-value
               :xresolution int-value :yresolution int-value).
 list of formats: 'A0 'A1 'A2 'A3 'A4 'A5 'A6 'A7"
-  (let* ((formats-list (list '(841 1189 'a0) '(594 841 'a1) '(420 594 'a2) '(297 420 'a3) '(210 297 'a4) 
+  (let* ((formats-list (list '(841 1189 'a0) '(594 841 'a1) '(420 594 'a2) '(297 420 'a3) '(210 297 'a4)
 			     '(148 210 'a5) '(105 148 'a6) '(74 105 'a7)))
 	 (x-ratio (/ (getf info :xresolution) +inch+))
 	 (y-ratio (/ (getf info :yresolution) +inch+))

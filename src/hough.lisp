@@ -9,12 +9,12 @@
   (let (near-points)
     (dolist (pt points-list)
 	 (let ((distance-to-pt (get-points-distance point pt)))
-	   (when (and 
+	   (when (and
 		  (>= max-distance distance-to-pt)
 		  (< 0 distance-to-pt))
 	     (push pt near-points))))
        near-points))
-	      
+
 (defun get-circle-radius-and-center (p1 p2 p3 max-distance)
   "Get radius and coordinates of center point of circle, that build on points `p1`, `p2` and `p3`. If radius > `max-distance` / 2 than nil will returned, else return list (radius (cx cy))."
   ;;
@@ -50,8 +50,8 @@
 		     (* (- x2 x3) (- y1 y2))
 		     (* (- x1 x2) (- y2 y3)))))
       (if (= 0 divisor)
-	  nil	  
-	  (let* ((summand1 (- 
+	  nil
+	  (let* ((summand1 (-
 			    (+ (expt x2 2) (expt y2 2))
 			    (expt x3 2)
 			    (expt y3 2)))
@@ -83,12 +83,12 @@
 Returns average circle (average center and average radius)."
   (list (avg (first circle1) (first circle2))
   	(list (round (avg (first (second circle1)) (first (second circle2))))
-  	      (round (avg (second (second circle1)) (second (second circle2)))))))	       
+  	      (round (avg (second (second circle1)) (second (second circle2)))))))
 
 (defun find-similar-circles (circle circles-hash)
-  "Find circles, similar to `circle` by radius and center, inside `circles-hash`."  
+  "Find circles, similar to `circle` by radius and center, inside `circles-hash`."
   (flet ((similar-circles? (circ1 circ2)
-	   ;; Check if `circ1` and `circ2` have approximately the same 
+	   ;; Check if `circ1` and `circ2` have approximately the same
 	   ;; radius and center point.
 	   (let ((center-delta 5)       ; max center points distance is 4 points
 		 (delta-r 2))			; radius may vary in 2 points
@@ -157,4 +157,38 @@ and small offset from circle radius. This method merge such circles *putting all
           (when (> 10 (length (gethash circle circles-hash)))
 	    (remhash circle circles-hash)))
     circles-hash))
+
+(defun get-max-angle (radius)
+  "Get maximum angle distance for specified radius."
+  (dolist (rad-condition (get-angles-step-for-circle))
+    (when (<= radius (first rad-condition))
+      (return-from get-max-angle (second rad-condition)))) 0)
+
+(defun analyse-circles (circles-hash)
+  "Analysing each circle of it's a circle, an arc or jist points set.
+Return 2 hash tables: arcs and circles."
+  (flet ((analyse-circle (circle points)
+	   (let* ((radius (first circle))
+		  (center (second circle))
+		  angles)
+	     (dolist (p points)
+	       (push (round (get-tilt-angle (list p center))) angles))
+	     (format t "Angles before sort ~a~%" angles)
+	     (setf angles (sort angles #'<))
+	     (format t "Angles after sort ~a~%" angles)
+	     ;; search arcs HERE
+	     ;; (let ((start-angle (first angles))
+	     ;; 	   arc)
+	     ;;   (loop for i from 1 to (length angles))
+	     ;; 	 (if (aref
+
+	     (when (get-debug-mode)
+	       (format t "Condition = ~a ~%" (get-max-angle radius))
+	       (format t "Circle points = ~a ~%" points)
+	       (format t "Circle: ~a      angles: ~a~%" circle angles)))))
+    (let ((new-hash-arcs    (make-hash-table :test #'equal))
+	  (new-hash-circles (make-hash-table :test #'equal)))
+
+	  (maphash #'(lambda (circle points)
+		       (analyse-circle circle points)) circles-hash))))
 

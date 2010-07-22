@@ -6,7 +6,7 @@
 ;;------------------------------------------------------------------------------
 (defun A-condition (points)
   "A condition of Zong Suen operation."
-  (let ((a 0) ) 
+  (let ((a 0) )
     (dotimes (i 8)
       (if (eq 1 (- (nth (+ i 1) points) (nth i points)))
 	  (setq a (+ a 1))))
@@ -14,14 +14,14 @@
 
 
 (defun B-condition (points)
-  "B condition of Zong Suen operation. 
+  "B condition of Zong Suen operation.
 Return sum of `points`."
   (apply '+ points))
 
 
 
 (defun zong-suen-condition (point hash-points order)
-  "Conditions for Zong-Suen method. 
+  "Conditions for Zong-Suen method.
 `order` is 'first for firste condition and 'second for second condition.
 Return t if condition is satisfied, otherwise nil."
   (let* ((p1 (get-hash-point-value point hash-points))
@@ -36,12 +36,12 @@ Return t if condition is satisfied, otherwise nil."
  	 (a-cond (A-condition (list p2 p3 p4 p5 p6 p7 p8 p9 p2)))
  	 (b-cond (B-condition (list p1 p2 p3 p4 p5 p6 p7 p8 p9)))
 	 )
-    (and 
-     (< 2 b-cond) 
+    (and
+     (< 2 b-cond)
      (<= b-cond 6)
      (eq a-cond 1)
      (cond
-       ((eq order 'first) (and 
+       ((eq order 'first) (and
 			   (eq 0 (apply '* (list p2 p4 p6)))
 			   (eq 0 (apply '* (list p4 p6 p8)))))
        ((eq order 'second) (and
@@ -78,12 +78,12 @@ Return t if condition is satisfied, otherwise nil."
     ;; second condition
     (loop for point being the hash-key of hash-points do
 	 (if (zong-suen-second-condition point hash-points)
-	     (progn 
+	     (progn
 	       (setf (gethash point ht) +black+))))
-    
+
     (loop for point-to-remove being the hash-key of ht do
 	 (remhash point-to-remove hash-points))
-    
+
 
     (when (get-debug-mode) (format t "second iteration. deleted ~d points ~%"  (hash-table-count ht)))
 
@@ -107,14 +107,14 @@ Return t if condition is satisfied, otherwise nil."
 			(when (get-debug-mode)
 			  (format t "point ~a [~a] (sum = ~a)~%" point (get-neibhour-points point hash-points) (apply #'+  (get-neibhour-points point hash-points))))
 		      (when (should-delete-point? point hash-points)
-			  (progn 
+			  (progn
 			    (when (get-debug-mode)(format t "deleting point ~a [~a]~%" point (get-neibhour-points point hash-points)))
 
-			    (incf deleted)			  
+			    (incf deleted)
 			    (remhash point hash-points)))))
 			  ;; (when (get-debug-mode) (format t "POINT ~a IS NOT DELETED [~a]~%" point (get-neibhour-points point hash-points)))))
 
 		 (when (get-debug-mode)(format t "~a points deleted~%" deleted))))
 
 	  hash-points))))
- 
+

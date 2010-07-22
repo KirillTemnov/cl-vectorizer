@@ -50,7 +50,7 @@ Format:
 	 (y1 (second p1))
 	 (x2 (first  p2))
 	 (y2 (second p2)))
-    (format nil "<line ~a x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\" stroke=\"~a\" stroke-width=\"~a\"/>~%" 
+    (format nil "<line ~a x1=\"~a\" y1=\"~a\" x2=\"~a\" y2=\"~a\" stroke=\"~a\" stroke-width=\"~a\"/>~%"
 	    id x1 y1 x2 y2 (slot-value object 'stroke) (slot-value object 'stroke-width))))
 
 ;;------------------------------------------------------------------------------
@@ -67,8 +67,8 @@ Format:
 Format:
 '(radius (center-x center-y))
 "
-  (make-instance 'svg-circle 
-		 :radius       (first circle) 
+  (make-instance 'svg-circle
+		 :radius       (first circle)
 		 :center       (second circle)
 		 :stroke       color
 		 :stroke-width width
@@ -80,9 +80,9 @@ Format:
 		   (t (format nil "id=\"~a\" " (slot-value object 'id)))))
 	 (center (slot-value object 'center))
 	 (radius (slot-value object 'radius)))
-    (format nil "<circle ~a cx=\"~a\" cy=\"~a\" r=\"~a\" stroke=\"~a\" stroke-width=\"~a\"  fill=\"~a\" fill-opacity=\"~a\"/>~%" 
+    (format nil "<circle ~a cx=\"~a\" cy=\"~a\" r=\"~a\" stroke=\"~a\" stroke-width=\"~a\"  fill=\"~a\" fill-opacity=\"~a\"/>~%"
 	    id (first center) (second center) radius (slot-value object 'stroke) (slot-value object 'stroke-width) (slot-value object 'fill) (slot-value object 'fill-opacity))))
-	       ;;------------------------------------------------------------------------------  
+	       ;;------------------------------------------------------------------------------
 (defclass svg-image (svg-object)
   ((left-point   :initarg  :left-point :initform '(0 0))
    (filename     :initarg  :filename   :initform nil)
@@ -107,7 +107,7 @@ Format:
     (format nil "<image ~a xlink:href=\"~a\" x=\"~a\" y=\"~a\" width=\"~a\" height=\"~a\"/>~%"
 	    id (slot-value object 'filename) x y (slot-value object 'width) (slot-value object 'height))))
 
-;;------------------------------------------------------------------------------  
+;;------------------------------------------------------------------------------
 
 (defun render-svg-file (entities-list width height)
   (concatenate 'string
@@ -156,7 +156,7 @@ Format:
 
 (defmethod flush-manager ((manager svg-manager) filename)
   (when (not (eq nil (slot-value manager 'entities-list)))
-    (write-to-file 
+    (write-to-file
      (render-svg-file (slot-value manager 'entities-list)
 		      (slot-value manager 'width)
 		      (slot-value manager 'height))
@@ -200,10 +200,10 @@ Format:
 ;;   (setf (slot-value manager 'file-to-save) filename)
 ;;   (flush-manager manager filename))
 
-				 
+
 
 ;; (defvar lines nil)
 ;; (push (make-svg-line '((5 5) (10 10) 4)) lines)
 ;; (push (make-svg-line '((0 0) (2 6) 4)) lines)
-;; (render-svg-file lines "100%" "100%") 
+;; (render-svg-file lines "100%" "100%")
 
