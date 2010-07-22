@@ -19,6 +19,7 @@
 				     (:file "vectorize" :depends-on ("packages" "helpers"))
 				     (:file "hough" :depends-on ("packages" "helpers"))
 				     (:file "svg" :depends-on ("packages" "helpers"))
+				     (:file "qtrees" :depends-on ("packages", "helpers"))
 	       ;; (:file "file" :depends-on ("module"))
                )))
   :depends-on (:sb-dxf :png))
