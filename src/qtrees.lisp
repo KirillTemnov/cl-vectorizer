@@ -9,7 +9,7 @@
          (w (png:image-width image))
          (h (png:image-height image))
          (ht (image-to-hashtable image))
-         (qt (create-tree ht w h)))
+         (qt (make-instance 'qtree :img-hash ht :width w :height h)))
     (format t "Tree created successfuly ~%")
     qt))
 
@@ -37,9 +37,9 @@
   (:documentation "Print qtree-element slots."))
 
 
-(defmethod print-qtree-element ((elem qtree-elem) stream)
+(defmethod print-qtree-element ((elem qtree-element) stream)
   (with-slots (size level label color) elem
-    (print-unreadable-object (node stream :type t)
+    (print-unreadable-object (elem stream :type t)
       (format stream "size: ~a, label: ~a, level: ~a, color: ~a " size level label color))))
 
 ;;--------------------------------------------------------------------------------
@@ -77,19 +77,34 @@ Example:
      size)))
 
 
-(defmethod create-tree (image-hash width height)
-  (let* ((size (get-tree-size (max width height)))
-         (qtree-instance (make-instance 'qtree
-                                        :image-hash image-hash
-                                        :size size
-                                        :root-element (make-instance 'qtree-element
-                                                                     :size size
-                                                                     :level 1))))
-    (with-slots (root-element) qtree-instance
+(defmethod initialize-instance :after ((qtree qtree) &key img-hash width height)
+  (labels ((get-tree-size (value &optional (size 2))
+             (cond
+               ((> value size)
+                (get-tree-size value (* 2 size)))
+               (t
+                size))))
+    (with-slots (image-hash size root-element) qtree
+      (setf image-hash img-hash)
+      (setf size (get-tree-size (max width height)))
+      (setf root-element  (make-instance 'qtree-element :size size :level 1))
       (loop for point being the hash-key of image-hash do
-           (add-black-pixel root-element (first point) (second point))))
-    (format t "total pixels add: ~a~%" (hash-table-size image-hash))
-    qtree-instance))
+           (add-black-pixel root-element (first point) (second point)))
+      (format t "total pixels add: ~a~%" (hash-table-size image-hash)))))
+
+;; (defmethod create-tree (image-hash width height)
+;;   (let* ((size (get-tree-size (max width height)))
+;;          (qtree-instance (make-instance 'qtree
+;;                                         :image-hash image-hash
+;;                                         :size size
+;;                                         :root-element (make-instance 'qtree-element
+;;                                                                      :size size
+;;                                                                      :level 1))))
+;;     (with-slots (root-element) qtree-instance
+;;       (loop for point being the hash-key of image-hash do
+;;            (add-black-pixel root-element (first point) (second point))))
+;;     (format t "total pixels add: ~a~%" (hash-table-size image-hash))
+;;     qtree-instance))
 
 (defun my-make-list (size index value &key initial-element)
   `(,@(make-list index :initial-element initial-element)
@@ -107,7 +122,6 @@ Example:
              (index 3)
              new-root)
 
-;;         (format t "Add new pixel, level ~a (~a ~a) size: ~a~%" level x y size)
          (cond
            ((and			; nw - first half
              (< x half-size)
@@ -138,14 +152,9 @@ Example:
                                        :color +white-color+
                                        :orient index)))
              (setf childs (my-make-list 4 index child))))
-             ;; (setf (nth index childs) child)))
-
 
          (setf new-root (nth index childs))
-         (when (equal root new-root)
-           (error "WTF?!! root = new-root"))
-         (format t "----------------------------------------~%"  )
-;;         (sleep 1)
+;;         (print-element new-root t)
          (add-black-pixel new-root  x y))))))
 
 
