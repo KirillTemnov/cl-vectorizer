@@ -8,8 +8,10 @@
 	 (image (load-image image-path))
 	 (w (png:image-width image))
 	 (h (png:image-height image))
-	 (ht (image-to-hashtable image)))
-))
+	 (ht (image-to-hashtable image))
+	 (qt (create-tree ht w h)))
+      (format t "Tree created successfuly ~%")
+      qt))
 
 ;; orients: northwest, northeast, southwest, southeast
 (defconstant +orients+ '(nw ne sw se))
@@ -37,6 +39,19 @@
    (path     :initarg :path :initform nil)
    (density  :initarg :density :initform nil))
   (:documentation "Quadtree base element."))
+;;--------------------------------------------------------------------------------
+(defgeneric print-element (elem)
+  (:documentation "Print qtree-element slots."))
+
+(defmethod print-element ((elem qtree-element))
+  (format t "[qtree element] ~a size: ~a  level: ~a  label: ~a   parent: ~a childs: ~a~%"
+	  elem
+	  (slot-value elem 'size)
+	  (slot-value elem 'level)
+	  (slot-value elem 'label)
+	  (slot-value elem 'parent)
+	  (slot-value elem 'childs)))
+
 
 ;;--------------------------------------------------------------------------------
 (defclass qtree nil
@@ -56,7 +71,7 @@
   (:documentation "Get tree element by path."))
 
 (defgeneric add-black-pixel (root pixel)
-  (:documentation "Add black pixel to tree."))
+  (:documentation "Add black pixel to quadtree."))
 
 ;;--------------------------------------------------------------------------------
 (defun get-tree-size (value &optional (size 2)) ; todo move to flet ?
@@ -94,13 +109,23 @@ Example:
 
       (t
        (when (eq nil (slot-value root 'childs))
-	 (setf (slot-value root 'childs) '(nil nil nil nil))) ;initialize nil leafs
+	 (progn
+	   (format t "init node childs~%"  )
+	   (setf (slot-value root 'childs) '(nil nil nil nil)))) ;initialize nil leafs
+
+       (print-element root)
+       (format t "Root childs: ~a~%" (slot-value root 'childs))
 
        (let ((x (first  pixel))
 	     (y (second pixel))
 	     (half-size (/ (slot-value root 'size) 2))
-	     (index 3))
+	     (index 3)
+	     new-root)
 
+	 (format t "Add new pixel, level ~a (~a ~a) size: ~a~%"
+		 (slot-value root 'level) x y
+		 (slot-value root 'size)
+		 )
 	 (cond
 	   ((and			; nw - first half
 	     (< x half-size)
@@ -124,14 +149,23 @@ Example:
 	    (setf y (- half-size y))))
 
 	   (when (eq nil (nth index (slot-value root 'childs)))
-	     (setf (nth index (slot-value root 'childs))
-		   (make-instance 'qtree-element
+	     (let ((child (make-instance 'qtree-element
 				  :size half-size
 				  :level (1+ (slot-value root 'level))
 				  :parent root
 				  :color +white-color+
 				  :orient index)))
+	       (format t "create child!~%"  )
+	       (setf (nth index (slot-value root 'childs)) child)))
 
-	   (add-black-pixel (nth index (slot-value root 'childs)) (list x y))))))
+
+	   (setf new-root (first (slot-value root 'childs)))
+	   (print-element new-root)
+	   (format t "~%~%"  )
+	   (when (equal root new-root)
+	     (error "WTF?!! root = new-root"))
+	   (format t "----------------------------------------~%"  )
+	   (sleep 1)
+	   (add-black-pixel new-root (list x y))))))
 
 
