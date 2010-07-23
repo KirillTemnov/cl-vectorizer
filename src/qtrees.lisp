@@ -14,18 +14,11 @@
     qt))
 
 ;; orients: northwest, northeast, southwest, southeast
-(defconstant +orients+ '(nw ne sw se))
+(defvar +orients+ '(nw ne sw se))
 ;; use this color, because color constants in packages.lisp differ
 (defconstant +white-color+ 0)
 (defconstant +black-color+ 1)
 
-
-;; internal clases and functions
-;; (defclass pixel nil
-;;   ((x  :initarg :x :initform 0)
-;;    (y  :initarg :y :initform 0)
-;;    (color  :initarg :color :initform nil))
-;;   (:documentation "Pixel of image with color.")
 
 ;;--------------------------------------------------------------------------------
 (defclass qtree-element nil
@@ -43,12 +36,11 @@
 (defgeneric print-element (elem)
   (:documentation "Print qtree-element slots."))
 
-(defmethod print-element ((elem qtree-element))
-  (with-slots (size level label parent childs) elem
-    (format t "[qtree element] ~a size: ~a  level: ~a  label: ~a   parent: ~a childs: ~a~%"
-            elem size level label parent childs)))
 
-
+(defmethod print-qtree-element ((elem qtree-elem) stream)
+  (with-slots (size level label color) elem
+    (print-unreadable-object (node stream :type t)
+      (format stream "size: ~a, label: ~a, level: ~a, color: ~a " size level label color))))
 
 ;;--------------------------------------------------------------------------------
 (defclass qtree nil
@@ -67,7 +59,7 @@
 (defgeneric get-leaf (tree path)
   (:documentation "Get tree element by path."))
 
-(defgeneric add-black-pixel (root pixel)
+(defgeneric add-black-pixel (root x y)
   (:documentation "Add black pixel to quadtree."))
 
 ;;--------------------------------------------------------------------------------
@@ -93,29 +85,29 @@ Example:
                                         :root-element (make-instance 'qtree-element
                                                                      :size size
                                                                      :level 1))))
-    (loop for point being the hash-key of image-hash do
-         (add-black-pixel (slot-value qtree-instance 'root-element) point))
-
+    (with-slots (root-element) qtree-instance
+      (loop for point being the hash-key of image-hash do
+           (add-black-pixel root-element (first point) (second point))))
+    (format t "total pixels add: ~a~%" (hash-table-size image-hash))
     qtree-instance))
 
-(defmethod add-black-pixel ((root qtree-element) pixel)
+(defun my-make-list (size index value &key initial-element)
+  `(,@(make-list index :initial-element initial-element)
+    ,value
+    ,@(make-list (- size index 1) :initial-element initial-element)))
+
+(defmethod add-black-pixel ((root qtree-element) x y)
   (with-slots (size childs level color) root
     (cond
       ((= 1 size)	; hit the bottom
-       (format t "Add pixel: ~a ~%" pixel)
        (setf color +black-color+))
 
       (t
-       ;; (print-element root)
-       ;; (format t "Root childs: ~a~%" childs)
-
-       (let ((x (first  pixel))
-             (y (second pixel))
-             (half-size (/ size 2))
+       (let ((half-size (/ size 2))
              (index 3)
              new-root)
 
-         (format t "Add new pixel, level ~a (~a ~a) size: ~a~%" level x y size)
+;;         (format t "Add new pixel, level ~a (~a ~a) size: ~a~%" level x y size)
          (cond
            ((and			; nw - first half
              (< x half-size)
@@ -126,37 +118,35 @@ Example:
              (>= x half-size)
              (<  y half-size))
             (setf index 1)
-            (setf x (- half-size x)))
+            (setf x (- x half-size)))
 
            ((and			; sw - third half
              (<  x half-size)
              (>= y half-size))
             (setf index 2)
-            (setf y (- half-size y)))
+            (setf y (- y half-size)))
 
            (t				; se fourth half, index already set in let
-            (setf x (- half-size x))
-            (setf y (- half-size y))))
+            (setf x (- x half-size))
+            (setf y (- y half-size))))
 
-         (when (eq nil (nth index childs))
+         (when (null (nth index childs))
            (let ((child (make-instance 'qtree-element
                                        :size half-size
                                        :level (1+ level)
                                        :parent root
                                        :color +white-color+
                                        :orient index)))
-             (format t "create child!~%"  )
-             (setf (nth index childs) child)))
+             (setf childs (my-make-list 4 index child))))
+             ;; (setf (nth index childs) child)))
 
 
-         (setf new-root (first childs))
-         ;; (print-element new-root)
-         (format t "~%~%"  )
+         (setf new-root (nth index childs))
          (when (equal root new-root)
            (error "WTF?!! root = new-root"))
          (format t "----------------------------------------~%"  )
-         (sleep 1)
-         (add-black-pixel new-root (list x y)))))))
+;;         (sleep 1)
+         (add-black-pixel new-root  x y))))))
 
 
 
