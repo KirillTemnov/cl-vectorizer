@@ -2,18 +2,6 @@
 
 (in-package #:cl-vectorizer)
 
-(defun make-qt (infile &key (outfile (change-extension infile "png")))
-  "Make a quadtree of image (infile) and save it to outfile."
-  (declare (ignore outfile))
-  (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
-         (image (load-image image-path))
-         (w (png:image-width image))
-         (h (png:image-height image))
-         (ht (image-to-hashtable image))
-         (qt (make-instance 'qtree :img-hash ht :width w :height h)))
-    (format t "Tree created successfuly ~%")
-    qt))
-
 ;; orients: northwest, northeast, southwest, southeast
 (defvar +orients+ '(nw ne sw se))
 ;; use this color, because color constants in packages.lisp differ
@@ -21,11 +9,15 @@
 (defconstant +black-color+ 1)
 
 (defun update-list (list index new-value)
+  "Update one element of list (with `index`) with `new-value`. Create a copy of list and
+then update it."
   (let ((new-list (copy-list list)))
     (setf (nth index new-list) new-value)
     new-list))
 
-;;--------------------------------------------------------------------------------
+;;------------------------------------------------------------
+;; class definitions
+;;------------------------------------------------------------
 (defclass qtree-node nil
   ((size     :initarg :size)
    (level    :initarg :level)
@@ -33,27 +25,70 @@
    (childs   :initarg :childs :initform '(nil nil nil nil))
    (parent   :initarg :parent :initform nil)
    (color    :initarg :color :initform nil)
-   (orient   :initarg :orient :initform (first +orients+))
-   (path     :initarg :path :initform nil)
+   (orient   :initarg :orient :initform nil) ;'root)
    (density  :initarg :density :initform 0))
   (:documentation "Quadtree base node."))
-;;--------------------------------------------------------------------------------
+
+(defclass qtree nil
+  ((image-hash    :initarg :image-hash :initform nil)
+   (size          :initarg :size :initform nil)
+   (root-node     :initarg :root-node :initform nil))
+  (:documentation "Quadtree class."))
+;;------------------------------------------------------------
+;; initialize-instance section
+;;------------------------------------------------------------
+(defmethod initialize-instance :after ((qtree qtree) &key img-hash width height)
+  (labels ((get-tree-size (value &optional (size 2))
+             (cond
+               ((> value size)
+                (get-tree-size value (* 2 size)))
+               (t
+                size))))
+    (with-slots (image-hash size root-node) qtree
+      (setf image-hash img-hash)
+      (setf size (get-tree-size (max width height)))
+      (setf root-node  (make-instance 'qtree-node :size size :level 1))
+      (loop for point being the hash-key of image-hash do
+;;           (format t "path = [ " )
+           (add-black-pixel root-node (first point) (second point)))
+      (format t "total pixels add: ~a~%" (hash-table-count image-hash)))))
+;;------------------------------------------------------------
+;; generics section
+;;------------------------------------------------------------
 (defgeneric print-qtree-node (node stream)
   (:documentation "Print qtree-node slots."))
 
 (defgeneric offset (node root-size)
   (:documentation "Get node offset from right top corner of image." ))
 
-
 (defgeneric recalc-colors (node)
   (:documentation "Recalculate color value for node.  Color of node is a sum of all
 undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 
-(defgeneric map-tree (root eval-func)
+(defgeneric map-tree (root eval-func &optional args &key path)
   (:documentation "Visit all nodes of tree from root and below, evaluate eval-func on each
   of nodes."))
 
+(defgeneric dump-tree (root hash)
+  (:documentation "Dump tree to a hash table."))
 
+(defgeneric print-tree (root)
+  (:documentation "Print tree nodes."))
+
+(defgeneric get-leaf (root path)
+  (:documentation "Get tree node by path. Path is a list of numbers 0, 1, 2 and 3."))
+
+(defgeneric add-black-pixel (root x y)
+  (:documentation "Add black pixel to quadtree."))
+
+(defgeneric label-neib (tree cond)
+  (:documentation "Recursive label tree nodes answer the condition, implemented in `cond`
+  function."))
+
+;; (defgeneric label-neib                     
+;;------------------------------------------------------------
+;; methods section
+;;------------------------------------------------------------
 (defmethod print-qtree-node ((node qtree-node) stream)
   (with-slots (size level label color density) node
     (print-unreadable-object (node stream :type t)
@@ -68,6 +103,10 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
         (setf y (+ y (* (ash (logand 2 i) -1) (/ root-size 2))))
         (setf root-size (/ root-size 2)))
       (list x y))))
+
+(defmethod recalc-colors ((tree qtree-node))
+  (with-slots (root-node) tree
+    (recalc-colors root-node)))
 
 (defmethod recalc-colors ((node qtree-node))
   (with-slots (size childs color density) node
@@ -85,38 +124,20 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
     (setf density (/ (float color) (* size size)))
     color))
 
-(defmethod map-tree ((root qtree-node) eval-func)
-  (funcall eval-func root)
-  (with-slots (childs size) root
-    (format t "map-tree childs= (~a)~%" childs)
+(defmethod map-tree ((tree qtree)  eval-func &optional args &key (path nil))
+  (with-slots (root-node) tree
+    (map-tree root-node eval-func args :path path)))
+
+(defmethod map-tree ((root qtree-node)  eval-func &optional args &key path)
+  (funcall eval-func root args :path path)
+  (with-slots (childs size orient) root
     (map 'list #'(lambda (child)
                    (cond
                      ((null child) nil)
                      (t
-                      (map-tree child eval-func)))) childs)))
+                      (map-tree child eval-func args :path (cons orient path) )))) childs)))
 
-;;--------------------------------------------------------------------------------
-(defclass qtree nil
-  ((image-hash    :initarg :image-hash :initform nil)
-   (size          :initarg :size :initform nil)
-   (root-node     :initarg :root-node :initform nil))
-  (:documentation "Quadtree class."))
-
-;;--------------------------------------------------------------------------------
-(defgeneric create-tree (image-hash width height)
-  (:documentation "Create instance of qtree class."))
-
-(defgeneric dump-tree (root hash)
-  (:documentation "Dump tree to a hash table."))
-
-(defgeneric get-leaf (root path)
-  (:documentation "Get tree node by path. Path is a list of numbers 0, 1, 2 and 3."))
-
-(defgeneric add-black-pixel (root x y)
-  (:documentation "Add black pixel to quadtree."))
-
-(defgeneric print-tree (root)
-  (:documentation "Print tree nodes."))
+;; (defmethod dump-tree
 
 (defmethod print-tree ((tree qtree))
   (with-slots (root-node) tree
@@ -133,23 +154,6 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
       (print-tree (nth 2 childs)))
     (when (not (null (nth 3 childs)))
       (print-tree (nth 3 childs)))))
-
-;;--------------------------------------------------------------------------------
-(defmethod initialize-instance :after ((qtree qtree) &key img-hash width height)
-  (labels ((get-tree-size (value &optional (size 2))
-             (cond
-               ((> value size)
-                (get-tree-size value (* 2 size)))
-               (t
-                size))))
-    (with-slots (image-hash size root-node) qtree
-      (setf image-hash img-hash)
-      (setf size (get-tree-size (max width height)))
-      (setf root-node  (make-instance 'qtree-node :size size :level 1))
-      (loop for point being the hash-key of image-hash do
-;;           (format t "path = [ " )
-           (add-black-pixel root-node (first point) (second point)))
-      (format t "total pixels add: ~a~%" (hash-table-count image-hash)))))
 
 (defmethod get-leaf ((root qtree-node) path)
   (with-slots (childs) root
@@ -208,6 +212,55 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 ;;         (format t "~a, " index)
          (add-black-pixel new-root  x y))))))
 
+;; (defmethod label-neib ((tree qtree) cond)
+;;   (map-tree tree 
+
+;; (defun label-neib (qtree node cond label-for-node)
+;;   (with-slots (size label) node
+;;     (cond
+;;       ((or
+;;         (not (= 4 size))                ; label only not labeled nodes with size 4
+;;         (< 0 label)) nil)                 ;
+;;       (t
+;;        (let* ((pathes-list (get-node-pathes-list node)) ; path_extractor.get_pathes
+;;               stk nd)
+;;          (setf label label-for-node)
+
+;;          (loop do
+;;               (setf stk nil)
+
+;;               (dolist (p pathes-list)
+;;                 (setf nd (get-node-by-path p))
+;;                 (when (and
+;;                        (funcall cond nd)
+;;                        (eq 0 slot-value nd 'label))
+;;                   (push nd stk)))
+
+;;               (setf pathes-list nil)
+;;               (dolist (nd stk)
+;;                 (with-slots (label) nd
+;;                   (setf label label-for-node)
+;;                   (dolist (p (get-node-pathes-list nd))
+;;                     (when (not (member p pathes-list :test #'equal))
+;;                       (push p pathes-list)))))
+
+;;               while (not (null stk)))
+
+
+;;          ;; update label
+;;          t)))))
 
 
 
+
+(defun make-qt (infile &key (outfile (change-extension infile "png")))
+  "Make a quadtree of image (infile) and save it to outfile."
+  (declare (ignore outfile))
+  (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
+         (image (load-image image-path))
+         (w (png:image-width image))
+         (h (png:image-height image))
+         (ht (image-to-hashtable image))
+         (qt (make-instance 'qtree :img-hash ht :width w :height h)))
+    (format t "Tree created successfuly ~%")
+    qt))
