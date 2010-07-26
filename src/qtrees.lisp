@@ -85,7 +85,7 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
   (:documentation "Recursive label tree nodes answer the condition, implemented in `cond`
   function."))
 
-;; (defgeneric label-neib                     
+;; (defgeneric label-neib (
 ;;------------------------------------------------------------
 ;; methods section
 ;;------------------------------------------------------------
@@ -95,7 +95,7 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
       (format stream "size: ~a, label: ~a, level: ~a, color: ~a, density: ~a~%"
               size level label color density))))
 
-(defmethod offset((node qtree-node) root-size)
+(defmethod offset ((node qtree-node) root-size)
   (with-slots (path) node
     (let ((x 0) (y 0))
       (dolist (i path)
@@ -213,16 +213,19 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
          (add-black-pixel new-root  x y))))))
 
 ;; (defmethod label-neib ((tree qtree) cond)
-;;   (map-tree tree 
+;;   (map-tree tree label-neib-r (list cond 1) ))
 
-;; (defun label-neib (qtree node cond label-for-node)
+;; (defun label-neib-r (node args path);cond label-for-node)
+;;   (let ((condition (first args))
+;;         (label-for-node (second args))
 ;;   (with-slots (size label) node
 ;;     (cond
 ;;       ((or
 ;;         (not (= 4 size))                ; label only not labeled nodes with size 4
 ;;         (< 0 label)) nil)                 ;
+
 ;;       (t
-;;        (let* ((pathes-list (get-node-pathes-list node)) ; path_extractor.get_pathes
+;;        (let* ((pathes-list (get-pathes-list node)) ; path_extractor.get_pathes
 ;;               stk nd)
 ;;          (setf label label-for-node)
 
@@ -240,7 +243,7 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 ;;               (dolist (nd stk)
 ;;                 (with-slots (label) nd
 ;;                   (setf label label-for-node)
-;;                   (dolist (p (get-node-pathes-list nd))
+;;                   (dolist (p (get-pathes-list nd))
 ;;                     (when (not (member p pathes-list :test #'equal))
 ;;                       (push p pathes-list)))))
 
@@ -250,8 +253,55 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 ;;          ;; update label
 ;;          t)))))
 
+;; macro for creating 4 similar functions - finding neibhours on same
+;; node level by path.
+(defmacro create-find-neib (name member-list index-list)
+  `(defun ,name (path)
+       (let ((index ,(first member-list))
+             (work-path (copy-list path))
+             fork-path)
+         (loop while (member index ',member-list) do
+              (setf index (pop work-path))
+              (push (nth index ',index-list) fork-path))
+         (append (reverse fork-path) work-path))))
+;;(macroexpand-1 '(create-find-neib bottom-neib (2 3) (2 3 0 1)))
 
+(create-find-neib  bottom-neib (2 3) (2 3 0 1))
+(create-find-neib  top-neib    (0 1) (2 3 0 1))
+(create-find-neib  left-neib   (0 2) (1 0 3 2))
+(create-find-neib  right-neib  (1 3) (1 0 3 2))
 
+(defun get-pathes-list (path)
+  "Get list pathes of near nodes."
+  (let ((init-path (rest path))
+        (path-list nil)
+        (orient (first path)))
+
+    (when (null init-path)
+      (return-from get-pathes-list path-list))
+
+    (cond                               ; add two brother nodes
+      ((< 0 orient 3)
+       (push (cons 0 init-path) path-list)
+       (push (cons 3 init-path) path-list))
+      (t
+       (push (cons 1 init-path) path-list)
+       (push (cons 2 init-path) path-list)))
+
+    (case orient
+      (0
+       (push (top-neib path) path-list)
+       (push (left-neib path) path-list))
+      (1
+       (push (top-neib path) path-list)
+       (push (right-neib path) path-list))
+      (2
+       (push (bottom-neib path) path-list)
+       (push (left-neib path) path-list))
+      (3
+       (push (bottom-neib path) path-list)
+       (push (right-neib path) path-list)))
+    path-list))
 
 (defun make-qt (infile &key (outfile (change-extension infile "png")))
   "Make a quadtree of image (infile) and save it to outfile."
