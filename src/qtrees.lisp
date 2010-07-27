@@ -32,6 +32,7 @@ then update it."
 (defclass qtree nil
   ((image-hash    :initarg :image-hash :initform nil)
    (size          :initarg :size :initform nil)
+;;   (current-label :initarg :size :initform 1)
    (root-node     :initarg :root-node :initform nil))
   (:documentation "Quadtree class."))
 ;;------------------------------------------------------------
@@ -58,6 +59,12 @@ then update it."
 (defgeneric print-qtree-node (node stream)
   (:documentation "Print qtree-node slots."))
 
+;; (defgeneric reset-tree-label (tree)
+;;   (:documentation "Reset tree label to 1."))
+
+;; (defgeneric update-tree-label (tree)
+;;   (:documentation "Increment tree label"))
+
 (defgeneric offset (node root-size)
   (:documentation "Get node offset from right top corner of image." ))
 
@@ -65,7 +72,7 @@ then update it."
   (:documentation "Recalculate color value for node.  Color of node is a sum of all
 undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 
-(defgeneric map-tree (root eval-func &optional args &key path)
+(defgeneric map-tree (root eval-func &optional args &key path state)
   (:documentation "Visit all nodes of tree from root and below, evaluate eval-func on each
   of nodes."))
 
@@ -94,6 +101,14 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
     (print-unreadable-object (node stream :type t)
       (format stream "size: ~a, label: ~a, level: ~a, color: ~a, density: ~a~%"
               size level label color density))))
+
+(defmethod reset-tree-label((tree qtree))
+  (with-slots (current-label) tree
+    (setf current-label 1)))
+
+(defmethod update-tree-label ((tree qtree))
+  (with-slots (current-label) tree
+    (incf current-label)))
 
 (defmethod offset ((node qtree-node) root-size)
   (with-slots (path) node
@@ -124,18 +139,18 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
     (setf density (/ (float color) (* size size)))
     color))
 
-(defmethod map-tree ((tree qtree)  eval-func &optional args &key (path nil))
+(defmethod map-tree ((tree qtree)  eval-func &optional args &key (path nil) (state nil))
   (with-slots (root-node) tree
-    (map-tree root-node eval-func args :path path)))
+    (map-tree root-node eval-func args :path path :state state)))
 
-(defmethod map-tree ((root qtree-node)  eval-func &optional args &key path)
-  (funcall eval-func root args :path path)
+(defmethod map-tree ((root qtree-node)  eval-func &optional args &key path state)
+  (funcall eval-func root args :path path :state state)
   (with-slots (childs size orient) root
     (map 'list #'(lambda (child)
                    (cond
                      ((null child) nil)
                      (t
-                      (map-tree child eval-func args :path (cons orient path) )))) childs)))
+                      (map-tree child eval-func args :path (cons orient path) :state state)))) childs)))
 
 ;; (defmethod dump-tree
 
@@ -212,46 +227,60 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 ;;         (format t "~a, " index)
          (add-black-pixel new-root  x y))))))
 
-;; (defmethod label-neib ((tree qtree) cond)
-;;   (map-tree tree label-neib-r (list cond 1) ))
+(defun get-node-by-path (node path)
+  "Recursive go to the tree and find node with PATH."
+  (when (null node) (error "Node path can't be found."))
+  (if (null path)
+      node
+      (with-slots (childs) node
+        (get-node-by-path (nth (first path) childs) (rest path)))))
 
-;; (defun label-neib-r (node args path);cond label-for-node)
-;;   (let ((condition (first args))
-;;         (label-for-node (second args))
-;;   (with-slots (size label) node
-;;     (cond
-;;       ((or
-;;         (not (= 4 size))                ; label only not labeled nodes with size 4
-;;         (< 0 label)) nil)                 ;
+(defun label-neib-r (node &key path state);cond label-for-node)
+  (format t "WITH SLOTS~%"  )
+  (let ((condition (getf state :condition))
+        (label-for-node (getf state :label))
+        (root-node (getf state :root-node)))
+  (with-slots (size label) node
+    (cond
+      ((or
+        (not (= 4 size))                ; label only not labeled nodes with size 4
+        (< 0 label)) (return-from label-neib-r nil))                 ;
 
-;;       (t
-;;        (let* ((pathes-list (get-pathes-list node)) ; path_extractor.get_pathes
-;;               stk nd)
-;;          (setf label label-for-node)
+      (t
+       (let* ((pathes-list (get-pathes-list node)) ; path_extractor.get_pathes
+              stk nd)
+         (setf label label-for-node)
 
-;;          (loop do
-;;               (setf stk nil)
+         (loop do
+              (setf stk nil)
 
-;;               (dolist (p pathes-list)
-;;                 (setf nd (get-node-by-path p))
-;;                 (when (and
-;;                        (funcall cond nd)
-;;                        (eq 0 slot-value nd 'label))
-;;                   (push nd stk)))
+              (dolist (p pathes-list)
+                (setf nd (get-node-by-path root-node (reverse p)))
+                (when (and
+                       (funcall condition nd)
+                       (eq 0 (slot-value nd 'label)))
+                  (push nd stk)))
 
-;;               (setf pathes-list nil)
-;;               (dolist (nd stk)
-;;                 (with-slots (label) nd
-;;                   (setf label label-for-node)
-;;                   (dolist (p (get-pathes-list nd))
-;;                     (when (not (member p pathes-list :test #'equal))
-;;                       (push p pathes-list)))))
+              (setf pathes-list nil)
+              (dolist (nd stk)
+                (with-slots (label) nd
+                  (setf label label-for-node)
+                  (dolist (p (get-pathes-list nd))
+                    (when (not (member p pathes-list :test #'equal))
+                      (push p pathes-list)))))
 
-;;               while (not (null stk)))
+              while (not (null stk)))
 
 
-;;          ;; update label
-;;          t)))))
+         ;; update label
+         (incf label-for-node)
+         t))))))
+
+(defmethod label-neib ((tree qtree) condition)
+  (let ((state `(:label 1 :condition ,condition :root-node ,(slot-value tree 'root-node))))
+    (map-tree tree #'label-neib-r :path nil :state state )))
+
+
 
 ;; macro for creating 4 similar functions - finding neibhours on same
 ;; node level by path.
