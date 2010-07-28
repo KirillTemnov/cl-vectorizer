@@ -9,7 +9,7 @@
 (defconstant +black-color+ 1)
 
 (defun update-list (list index new-value)
-  "Update one element of list (with `index`) with `new-value`. Create a copy of list and
+  "Update one element of list (with INDEX) with NEW-VALUE. Create a copy of LIST and
 then update it."
   (let ((new-list (copy-list list)))
     (setf (nth index new-list) new-value)
@@ -49,8 +49,6 @@ then update it."
       (setf size (get-tree-size (max width height)))
       (setf root-node  (make-instance 'qtree-node :size size :level 1))
       (loop for point being the hash-key of image-hash do
-           (format t "add pixel ~a ~%" point)
-;;           (format t "path = [ " )
            (add-black-pixel root-node (first point) (second point) :path nil))
       (format t "total pixels add: ~a~%" (hash-table-count image-hash)))))
 ;;------------------------------------------------------------
@@ -58,9 +56,6 @@ then update it."
 ;;------------------------------------------------------------
 (defgeneric print-qtree-node (node stream)
   (:documentation "Print qtree-node slots."))
-
-(defgeneric offset (node path)
-  (:documentation "Get node offset from right top corner of image." ))
 
 (defgeneric recalc-colors (node)
   (:documentation "Recalculate color value for node.  Color of node is a sum of all
@@ -103,13 +98,17 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
   (with-slots (current-label) tree
     (incf current-label)))
 
-(defmethod offset ((node qtree-node) path)
-    (let ((x 0) (y 0) (root-size (expt 2 (length path))))
+(defmethod offset (path)
+  "Get node offset from left top corner of image."
+    (let ((x 0)
+          (y 0)
+          (half-size (/ (expt 2 (1- (length path))) 2)))
       (dolist (i (rest (reverse path)))
-        (setf x (+ x (* (logand 1 i) (/ root-size 2))))
-        (setf y (+ y (* (ash (logand 2 i) -1) (/ root-size 2))))
-        (setf root-size (/ root-size 2)))
+        (setf x (+ x (* (logand 1 i)  half-size)))
+        (setf y (+ y (* (ash (logand 2 i) -1) half-size)))
+        (setf half-size (/ half-size 2)))
       (list x y)))
+
 
 (defmethod recalc-colors ((tree qtree-node))
   (with-slots (root-node) tree
@@ -174,13 +173,9 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 (defmethod add-black-pixel ((root qtree-node) x y &key (path nil))
   (with-slots (size childs level color orient) root
 
-;;    (print-qtree-node root t)
-    (cond
+    (cond                               ; todo remove cond
       ((= 1 size)	; hit the bottom
-       (progn
-;;         (format t "ADD BOTTOM PIXEL path = ~a~%"  path)
-;;         (format t "]~%++++++++++++++++++++++++++++++++++++++++~%"  )
-         (format t "Pixel added to ~a~%" (offset root path))
+       (progn           ; todo remove progn
          (setf color +black-color+)))
 
       (t
@@ -190,18 +185,18 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 
          (cond
            ((and			; nw - first half
-             (< x half-size)
+             (< x half-size) ;;(<= 0 x) (<= 0 y)
              (< y half-size))
             (setf index 0))
 
            ((and			; ne - second half
-             (>= x half-size)
+             (>= x half-size) ;;(<= half-size x) (<= 0 y)
              (<  y half-size))
             (setf index 1)
             (setf x (- x half-size)))
 
            ((and			; sw - third half
-             (<  x half-size)
+             (<  x half-size) ;; (<= 0 x) (<= half-size y)
              (>= y half-size))
             (setf index 2)
             (setf y (- y half-size)))
@@ -219,10 +214,9 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
                                        :orient index)))
              (setf childs (update-list childs index child))))
 
+
          (setf new-root (nth index childs))
          (when (equal root new-root) (error "WTF!!!!?"))
-
-         (format t "add (~a; ~a) ~%" x y)
 
          (add-black-pixel new-root  x y :path (cons orient path) ))))))
 
@@ -239,11 +233,13 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 
 (defun label-neib-r (node &key path state)
   "Label all childs for NODE. PATH is a reversed path to NODE from root of the tree.
-STATE is a property list, must have at least :condition, :label and :root-node properties."
+STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE properties."
   (let ((condition (getf state :condition))
         (label-for-node (getf state :label))
         (root-node (getf state :root-node)))
   (with-slots (size label) node
+;;    (format t "condition  = ~a~%" (funcall condition node :path path :state state))
+    ;; condition and mark must be separate functions
     (cond
       ((or
         (not (= 4 size))                ; label only not labeled nodes with size 4
@@ -258,12 +254,11 @@ STATE is a property list, must have at least :condition, :label and :root-node p
 
               (dolist (p pathes-list)
                 (setf nd (get-node-by-path root-node (reverse  p)))
-                (when (and
-                       (funcall condition nd)
-                       (eq 0 (slot-value nd 'label)))
                 (with-slots (label) nd
-                  (setf label label-for-node)
-                  (push p stk))))
+                  (when (funcall condition nd :path path :state state)
+                    ;; (setf label label-for-node)
+                    (format t "SET label (~a) -> (~a) ~%" p label)
+                    (push p stk))))
 
               (setf pathes-list nil)
               (dolist (p stk)
@@ -341,6 +336,7 @@ STATE is a property list, must have at least :condition, :label and :root-node p
          (h (png:image-height image))
          (ht (image-to-hashtable image))
          (qt (make-instance 'qtree :img-hash ht :width w :height h)))
+    (save-image (hashtable-to-image ht w h) #p"/tmp/out.png") ;todo delete this
     (format t "Tree created successfuly ~%")
     qt))
 
@@ -362,35 +358,17 @@ STATE is a property list, must have at least :condition, :label and :root-node p
   "Fill image with COLOR."
   (draw-rect image `(:start (0 0) :size ,(list  (1- (png:image-width image))  (1- (png:image-height image)))) :color color))
 
-(defun dump-tree (tree image-filename )
-;(tree)
-  ;; create image with 1 channel and 8-bit (grayscale)
-  (with-slots (size) tree
-  (let ((image (png:make-image size size 1 8)))
-    (fill-image image 255)
-    (format t "MARK----------~%"  )
-    (map-tree tree #'(lambda (node &key path state)
-                       (with-slots (label) node
-                         (when (< 0 label)
-                           (draw-rect image `(:start ,(offset node path) :size
-                                                     ,(list (slot-value node 'size)  (slot-value node 'size))))))))
-
-    (save-image image image-filename)
-    t)))
-
 
 (defun dump-tree-image (tree image-filename)
   (with-slots (size) tree
 
     (let ((image (png:make-image size size 1 8)))
       (fill-image image 255)
-      (format t "FILL IMAGE++++++++++++++++++++++++++++++~%"  )
       (map-tree tree #'(lambda (node &key path state)
                          (with-slots (color size) node
                            (when (and (= 1 size)  (eq color +black-color+))
-                             (let* ((xy (offset node path))
+                             (let* ((xy (offset path))
                                     (x (first xy))
                                     (y (second xy)))
                                (setf (aref image y x 0) +black-color+))))))
-      (format t "END OF DRAW++++++++++++++++++++++++++++++ ~%"  )
       (save-image image image-filename))))
