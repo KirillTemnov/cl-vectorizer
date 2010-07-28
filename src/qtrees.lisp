@@ -24,7 +24,7 @@ then update it."
    (label    :initarg :label :initform 0)
    (childs   :initarg :childs :initform '(nil nil nil nil))
    (parent   :initarg :parent :initform nil)
-   (color    :initarg :color :initform nil)
+   (color    :initarg :color :initform 0)
    (orient   :initarg :orient :initform nil) ;'root)
    (density  :initarg :density :initform 0))
   (:documentation "Quadtree base node."))
@@ -49,8 +49,9 @@ then update it."
       (setf size (get-tree-size (max width height)))
       (setf root-node  (make-instance 'qtree-node :size size :level 1))
       (loop for point being the hash-key of image-hash do
+           (format t "add pixel ~a ~%" point)
 ;;           (format t "path = [ " )
-           (add-black-pixel root-node (first point) (second point)))
+           (add-black-pixel root-node (first point) (second point) :path nil))
       (format t "total pixels add: ~a~%" (hash-table-count image-hash)))))
 ;;------------------------------------------------------------
 ;; generics section
@@ -58,7 +59,7 @@ then update it."
 (defgeneric print-qtree-node (node stream)
   (:documentation "Print qtree-node slots."))
 
-(defgeneric offset (node root-size)
+(defgeneric offset (node path)
   (:documentation "Get node offset from right top corner of image." ))
 
 (defgeneric recalc-colors (node)
@@ -78,7 +79,7 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 (defgeneric get-leaf (root path)
   (:documentation "Get tree node by path. Path is a list of numbers 0, 1, 2 and 3."))
 
-(defgeneric add-black-pixel (root x y)
+(defgeneric add-black-pixel (root x y &key path)
   (:documentation "Add black pixel to quadtree."))
 
 (defgeneric label-neib (tree cond)
@@ -102,14 +103,13 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
   (with-slots (current-label) tree
     (incf current-label)))
 
-(defmethod offset ((node qtree-node) root-size)
-  (with-slots (path) node
-    (let ((x 0) (y 0))
-      (dolist (i path)
+(defmethod offset ((node qtree-node) path)
+    (let ((x 0) (y 0) (root-size (expt 2 (length path))))
+      (dolist (i (rest (reverse path)))
         (setf x (+ x (* (logand 1 i) (/ root-size 2))))
         (setf y (+ y (* (ash (logand 2 i) -1) (/ root-size 2))))
         (setf root-size (/ root-size 2)))
-      (list x y))))
+      (list x y)))
 
 (defmethod recalc-colors ((tree qtree-node))
   (with-slots (root-node) tree
@@ -171,12 +171,16 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
       (t
        (get-leaf (nth (first path) root)  (last path))))))
 
-(defmethod add-black-pixel ((root qtree-node) x y)
-  (with-slots (size childs level color) root
+(defmethod add-black-pixel ((root qtree-node) x y &key (path nil))
+  (with-slots (size childs level color orient) root
+
+;;    (print-qtree-node root t)
     (cond
       ((= 1 size)	; hit the bottom
        (progn
+;;         (format t "ADD BOTTOM PIXEL path = ~a~%"  path)
 ;;         (format t "]~%++++++++++++++++++++++++++++++++++++++++~%"  )
+         (format t "Pixel added to ~a~%" (offset root path))
          (setf color +black-color+)))
 
       (t
@@ -217,7 +221,10 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 
          (setf new-root (nth index childs))
          (when (equal root new-root) (error "WTF!!!!?"))
-         (add-black-pixel new-root  x y))))))
+
+         (format t "add (~a; ~a) ~%" x y)
+
+         (add-black-pixel new-root  x y :path (cons orient path) ))))))
 
 (defun get-node-by-path (node path)
   "Recursive go throgh the tree and find node with PATH."
@@ -243,7 +250,7 @@ STATE is a property list, must have at least :condition, :label and :root-node p
         (< 0 label)) (return-from label-neib-r nil))                 ;
 
       (t
-       (let* ((pathes-list (get-pathes-list path)) 
+       (let* ((pathes-list (get-pathes-list path))
               stk nd)
          (setf label label-for-node)
          (loop do
@@ -336,3 +343,54 @@ STATE is a property list, must have at least :condition, :label and :root-node p
          (qt (make-instance 'qtree :img-hash ht :width w :height h)))
     (format t "Tree created successfuly ~%")
     qt))
+
+
+;; create image and save nodes to it
+
+(defun draw-rect (image rect &key (color 0) )
+  "RECT is (:start (x y) :size (x y)."
+  (let* ((x0 (first (getf rect :start)))
+        (y0 (second (getf rect :start)))
+        (x1 (+ x0 (first (getf rect :size))))
+        (y1 (+ y0 (second (getf rect :size)))))
+    (loop for x from x0 to x1 do
+         (loop for y from y0 to y1 do
+              (setf (aref image y x 0) color)))))
+
+
+(defun fill-image (image color)
+  "Fill image with COLOR."
+  (draw-rect image `(:start (0 0) :size ,(list  (1- (png:image-width image))  (1- (png:image-height image)))) :color color))
+
+(defun dump-tree (tree image-filename )
+;(tree)
+  ;; create image with 1 channel and 8-bit (grayscale)
+  (with-slots (size) tree
+  (let ((image (png:make-image size size 1 8)))
+    (fill-image image 255)
+    (format t "MARK----------~%"  )
+    (map-tree tree #'(lambda (node &key path state)
+                       (with-slots (label) node
+                         (when (< 0 label)
+                           (draw-rect image `(:start ,(offset node path) :size
+                                                     ,(list (slot-value node 'size)  (slot-value node 'size))))))))
+
+    (save-image image image-filename)
+    t)))
+
+
+(defun dump-tree-image (tree image-filename)
+  (with-slots (size) tree
+
+    (let ((image (png:make-image size size 1 8)))
+      (fill-image image 255)
+      (format t "FILL IMAGE++++++++++++++++++++++++++++++~%"  )
+      (map-tree tree #'(lambda (node &key path state)
+                         (with-slots (color size) node
+                           (when (and (= 1 size)  (eq color +black-color+))
+                             (let* ((xy (offset node path))
+                                    (x (first xy))
+                                    (y (second xy)))
+                               (setf (aref image y x 0) +black-color+))))))
+      (format t "END OF DRAW++++++++++++++++++++++++++++++ ~%"  )
+      (save-image image image-filename))))

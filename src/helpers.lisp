@@ -99,7 +99,6 @@ Example:
 		 :type (pathname-type filename)
 		 :directory (pathname-directory filename)))
 
-
 (defun load-image (path)
   "Load image from file"
   (png:decode (open path :element-type '(unsigned-byte 8))))
