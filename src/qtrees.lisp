@@ -37,20 +37,19 @@ then update it."
 ;;------------------------------------------------------------
 ;; initialize-instance section
 ;;------------------------------------------------------------
-(defmethod initialize-instance :after ((qtree qtree) &key img-hash width height)
+(defmethod initialize-instance :after ((tree qtree) &key size)
   (labels ((get-tree-size (value &optional (size 2))
              (if (> value size)
                  (get-tree-size value (* 2 size))
                  size)))
-      (setf (tree-image-hash qtree) img-hash)
-      (setf (tree-size qtree) (get-tree-size (max width height)))
-      (setf (tree-root-node qtree)  (make-instance 'qtree-node :size (tree-size qtree) :level 1))
-      (loop for point being the hash-key of (tree-image-hash qtree) do
-           (add-black-pixel (tree-root-node qtree) (first point) (second point) :path nil))
-      (format t "total pixels add: ~a~%" (hash-table-count (tree-image-hash qtree)))))
+      (setf (tree-size tree) (get-tree-size size))
+      (setf (tree-root-node tree)  (make-instance 'qtree-node :size (tree-size tree) :level 1))))
 ;;------------------------------------------------------------
 ;; generics section
 ;;------------------------------------------------------------
+(defgeneric fill-tree (tree image-hash)
+  (:documentation "Fill tree with points from IMAGE-HASH."))
+
 (defgeneric print-qtree-node (node stream)
   (:documentation "Print qtree-node slots."))
 
@@ -74,12 +73,19 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 (defgeneric add-black-pixel (node x y &key path)
   (:documentation "Add black pixel to quadtree."))
 
-(defgeneric label-neib (tree cond)
+(defgeneric label-neib (tree cond &key min-node-size)
   (:documentation "Recursive label TREE nodes answer the condition, implemented in COND
-  function."))
+  function. MIN-NODE-SIZE is a minimum size of tree, that can be labeled, default 2."))
 ;;------------------------------------------------------------
 ;; methods section
 ;;------------------------------------------------------------
+(defmethod fill-tree ((tree qtree) image-hash)
+  (setf (tree-image-hash tree) image-hash)
+  (loop for point being the hash-key of (tree-image-hash tree) do
+       (when (= (tree-size tree) (max (first point) (second point) (tree-size tree)))
+         (add-black-pixel (tree-root-node tree) (first point) (second point) :path nil))))
+
+
 (defmethod print-qtree-node ((node qtree-node) stream)
     (print-unreadable-object (node stream :type t)
       (format stream "size: ~a, label: ~a, level: ~a, color: ~a, density: ~a~%"
@@ -194,9 +200,10 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
   (let ((condition (getf state :condition))
         (label-for-node (getf state :label))
         (root-node (getf state :root-node)))
-    ;; condition and mark may be separate functions
-    (if (or
-         (not (= 4 (node-size node)))                ; label only not labeled nodes with size 4
+
+    ;; label only not labeled nodes with size >= :MIN-NODE-SIZE
+    (if (and
+         (not (= (getf state :min-node-size) (node-size node)))
          (< 0 (node-label node)))
         nil
         ;; (return-from label-neib-r nil)                 ;
@@ -207,7 +214,7 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
                (dolist (p pathes-list)
                  (setf nd (get-node-by-path root-node (reverse  p)))
                  (when (funcall condition nd :path path :state state)
-                   ;;                    (format t "SET label (~a) -> (~a) ~%" p (node-label node))
+                   ;; (format t "SET label (~a) -> (~a) ~%" p (node-label node))
                    (push p stack-for-pathes)))
 
                (setf pathes-list nil)
@@ -217,11 +224,12 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
              while (not (null stack-for-pathes)))
 
           ;; update label
-         (incf label-for-node)
+         (incf (getf state :label))
          t))))
 
-(defmethod label-neib ((tree qtree) condition)
-  (let ((state `(:label 1 :condition ,condition :root-node ,(tree-root-node tree))))
+(defmethod label-neib ((tree qtree) condition &key (min-node-size 4))
+  (let ((state `(:label 1 :condition ,condition :min-node-size ,(/ min-node-size 2)
+                        :root-node ,(tree-root-node tree))))
     (map-tree tree #'label-neib-r :path nil :state state )))
 ;;------------------------------------------------------------
 ;; functions section
@@ -293,13 +301,13 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
   (declare (ignore outfile))
   (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
          (image (load-image image-path))
-         (w (png:image-width image))
-         (h (png:image-height image))
-         (ht (image-to-hashtable image))
-         (qt (make-instance 'qtree :img-hash ht :width w :height h)))
-    (save-image (hashtable-to-image ht w h) #p"/tmp/out.png") ;todo delete this
+         (tree (make-instance 'qtree :size (max (png:image-width image)  (png:image-height image)))))
+    (fill-tree tree (image-to-hashtable image))
+    ;; todo delete this
+    (save-image (hashtable-to-image (tree-image-hash tree)
+                                    (tree-size tree) (tree-size tree)) #p"/tmp/out.png")
     (format t "Tree created successfuly ~%")
-    qt))
+    tree))
 
 ;; create image and save nodes to it
 (defun draw-rect (image rect &key (color 0) )
