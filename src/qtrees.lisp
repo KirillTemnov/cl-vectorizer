@@ -146,6 +146,7 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 (defmethod add-black-pixel ((node qtree-node) x y &key (path nil))
   (if (= 1 (node-size node))	; hit the bottom
       (progn           ; todo remove progn
+        (format t "Path = ~a~%" (cons (node-orient node) path))
         (setf (node-color node) +black-color+))
       ;; else
       (let ((half-size (/ (node-size node) 2)) (index 3))
@@ -236,10 +237,10 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
 ;;------------------------------------------------------------
 (defun offset (path)
   "Get node offset from left top corner of image."
-    (let ((x 0)
+    (let* ((x 0)
           (y 0)
-          (half-size (/ (expt 2 (1- (length path))) 2)))
-      (dolist (i (rest (reverse path)))
+           (half-size (/ (expt 2  (length path)) 2)))
+      (dolist (i (reverse path))
         (setf x (+ x (* (logand 1 i)  half-size)))
         (setf y (+ y (* (ash (logand 2 i) -1) half-size)))
         (setf half-size (/ half-size 2)))
@@ -329,12 +330,27 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
 
 
 (defun dump-tree-image (tree image-filename)
-  "Dump TREE nodes as image to file. This function for debuging."
+  "Dump TREE nodes as image to file. This function is for debuging."
   (let ((image (png:make-image (tree-size tree) (tree-size tree) 1 8)))
     (fill-image image 255)
     (map-tree tree #'(lambda (node &key path state)
                        (declare (ignore state))
                        (when (and (= 1 (node-size node))  (eq (node-color node) +black-color+))
+                         (let* ((xy (offset path))
+                                (x (first xy))
+                                (y (second xy)))
+                           (setf (aref image y x 0) +black-color+)))))
+    (save-image image image-filename)))
+
+(defun tree-slice->file (tree size image-filename)
+  "Dump TREE nodes from one slice to image file. This function is for debuging."
+  (let ((image (png:make-image (tree-size tree) (tree-size tree) 1 8)))
+    (fill-image image 255)
+    (map-tree tree #'(lambda (node &key path state)
+                       (declare (ignore state))
+                       ;; (and (= 1 (node-size node))  (< 0  (node-color node)))
+                       ;; (and (= 1 (node-label node)) (= 2 (node-size node)))
+                       (when (and (eq size (node-size node)) (< 0 (node-color node)))
                          (let* ((xy (offset path))
                                 (x (first xy))
                                 (y (second xy)))

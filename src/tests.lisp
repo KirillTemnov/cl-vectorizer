@@ -1,9 +1,10 @@
 
 (in-package #:cl-vectorizer)
 
+
 ;; testing suite
 (defun qtree-test-suite nil
-  "Test of correct finding pathes by functions BOTTOM-NEIB, LEFT-NEIB, TOP-NEIB, RIGHT-NEIB."
+  "Test of correct finding pathes by functions BOTTOM-NEIB, LEFT-NEIB, TOP-NEIB, RIGHT-NEIB, GET-PATHES-LIST."
   (assert (equal (bottom-neib '(0 3 0)) '(2 3 0)))
   (assert (equal (top-neib '(0 3 0)) '(2 1 0)))
   (assert (equal (left-neib '(0 3 0)) '(1 2 0)))
@@ -17,6 +18,22 @@
   (assert (equal (get-pathes-list '(1 1 2)) '((0 0 3) (3 3 0) (3 1 2) (0 1 2))))
   (format nil "ok"  ))
 
+(defun qtree-test-offset nil
+  "Test offset function"
+  (assert (equal (offset '(0 0 0)) '(0 0)))
+  (assert (equal (offset '(1 0 0)) '(1 0)))
+  (assert (equal (offset '(2 0 0)) '(0 1)))
+  (assert (equal (offset '(3 0 0)) '(1 1)))
+  (assert (equal (offset '(2 1 0)) '(2 1)))
+  (assert (equal (offset '(0 3 0)) '(2 2)))
+  (assert (equal (offset '(1 0 2)) '(1 4)))
+  (assert (equal (offset '(2 1 2)) '(2 5)))
+  (assert (equal (offset '(1 2 1)) '(5 2)))
+  (assert (equal (offset '(2 2 1)) '(4 3)))
+  (assert (equal (offset '(3 2 1)) '(5 3)))
+  (assert (equal (offset '(0 0 3)) '(4 4)))
+  (format nil "ok"))
 
+(qtree-test-offset)
 (qtree-test-suite)
 
