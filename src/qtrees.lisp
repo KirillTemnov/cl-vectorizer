@@ -19,12 +19,12 @@ then update it."
 ;; class definitions
 ;;------------------------------------------------------------
 (defclass qtree-node nil
-  ((size     :reader   node-size    :initarg :size)
-   (level    :reader   node-level   :initarg :level)
+  ((size     :reader   node-size    :initarg :size   ) ;:type integer
+   (level    :reader   node-level   :initarg :level  ) ;:type integer
    (label    :accessor node-label   :initarg :label   :initform 0)
    (childs   :accessor node-childs  :initarg :childs  :initform (copy-list '(nil nil nil nil)))
    (parent   :reader   node-parent  :initarg :parent  :initform nil)
-   (color    :accessor node-color   :initarg :color   :initform 0)
+   (color    :accessor node-color   :initarg :color   :initform 0) ;:type integer
    (orient   :reader   node-orient  :initarg :orient  :initform nil)
    (density  :accessor node-density :initarg :density :initform 0))
   (:documentation "Quadtree base node."))
