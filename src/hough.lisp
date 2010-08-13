@@ -5,7 +5,7 @@
 ;; using for search circles
 
 (defun get-near-points (point points-list max-distance)
-  "Get list of points that are at a `max-distance` or closer to `point`."
+  "Get list of points that are at a MAX-DISTANCE or closer to POINT."
   (let (near-points)
     (dolist (pt points-list)
       (let ((distance-to-pt (get-points-distance point pt)))
