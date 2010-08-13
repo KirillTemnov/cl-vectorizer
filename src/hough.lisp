@@ -9,9 +9,7 @@
   (let (near-points)
     (dolist (pt points-list)
       (let ((distance-to-pt (get-points-distance point pt)))
-        (when (and
-               (>= max-distance distance-to-pt)
-               (< 0 distance-to-pt))
+        (when (>= max-distance distance-to-pt)
           (push pt near-points))))
     near-points))
 
@@ -137,8 +135,7 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
            (incf i)
            (when (get-debug-mode)
              (format t "tick ~a. List length = ~a...~%" i (length points-list)))
-           (setf p1 (first points-list))
-           (setf points-list (cdr points-list))
+           (setf p1 (pop points-list))
            (setf near-points-list (get-near-points p1 points-list max-distance))
            (dolist (p2 near-points-list)
              (dolist (p3 near-points-list)
@@ -152,9 +149,11 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
 
            (loop for circle-params being the hash-key of circles-hash do
                 (let ((lst (gethash circle-params circles-hash)))
-                  (when (> 5 (length lst)) ; change this to more complex condition
+                  (when (> 10 (length lst)) ; change this to more complex condition
                     (remhash circle-params circles-hash))))
-           (merge-hashed-circles circles-hash)))
+           ))
+;;    (merge-hashed-circles circles-hash)
+
 
     (loop for circle being the hash-key of circles-hash do
          (when (> 10 (length (gethash circle circles-hash)))
@@ -168,7 +167,7 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
       (return-from get-max-angle (second rad-condition)))) 0)
 
 (defun analyse-circles (circles-hash)
-  "Analysing each circle of it's a circle, an arc or jist points set.
+  "Analysing each circle if it's a circle, an arc or just a points set.
 Return 2 hash tables in list: arcs and circles."
   (flet ((analyse-circle (circle points)
            (let* ((radius (first circle))

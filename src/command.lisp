@@ -162,7 +162,8 @@ TODO Add default values.
 	 (image (load-image image-path))
 	 (w (png:image-width image))
 	 (h (png:image-height image))
-	 (ht (thin-image-hash (image-to-hashtable image)))
+;;	 (ht (thin-image-hash (image-to-hashtable image)))
+	 (ht (image-to-hashtable image))
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
 	 circles-hash
 	 lines-ht
