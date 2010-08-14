@@ -34,6 +34,16 @@
   (assert (equal (offset '(0 0 3)) '(4 4)))
   (format nil "ok"))
 
+(defun vectorize-test-suite nil
+  "Test helpers module"
+  (assert (> 0.5 (abs (- 45  (ta2 '((10 10) (20 20)))))))
+  (assert (> 0.5 (abs (- 135  (ta2 '((10 10) (0 20)))))))
+  (assert (> 0.5 (abs (- 225 (ta2 '((10 10) (0 0)))))))
+  (assert (> 0.5 (abs (- 315 (ta2 '((10 10) (20 0)))))))
+  (format nil "ok"))
+
+
+
 (qtree-test-offset)
 (qtree-test-suite)
 

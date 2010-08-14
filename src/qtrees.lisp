@@ -53,8 +53,8 @@ then update it."
 (defgeneric print-qtree-node (node stream)
   (:documentation "Print qtree-node slots."))
 
-(defgeneric recalc-colors (node)
-  (:documentation "Recalculate color value for node.  Color of node is a sum of all
+(defgeneric recalc-colors (tree)
+  (:documentation "Recalculate color value for TREE nodes.  Color of node is a sum of all
 undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 
 (defgeneric map-tree (tree eval-func  &key path state)
@@ -67,15 +67,21 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 (defgeneric print-tree (tree)
   (:documentation "Print tree nodes."))
 
-;; (defgeneric get-leaf (tree path)
-;;   (:documentation "Get tree node by path. Path is a list of numbers 0, 1, 2 and 3."))
-
 (defgeneric add-black-pixel (node x y &key path)
   (:documentation "Add black pixel to quadtree."))
 
 (defgeneric label-neib (tree cond &key min-node-size)
   (:documentation "Recursive label TREE nodes answer the condition, implemented in COND
   function. MIN-NODE-SIZE is a minimum size of tree, that can be labeled, default 2."))
+
+(defgeneric tree-slice->file (tree node-size image-filename)
+  (:documentation "Dump TREE nodes from one slice (defined by node NODE-SIZE) to image
+   file (IMAGE-FILENAME)."))
+
+(defgeneric tree-slice->hash (tree node-size)
+  (:documentation "Dump TREE nodes from one slice (defined by node NODE-SIZE) to image
+   hash as a keys"))
+
 ;;------------------------------------------------------------
 ;; methods section
 ;;------------------------------------------------------------
@@ -91,7 +97,7 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
       (format stream "size: ~a, label: ~a, level: ~a, color: ~a, density: ~a~%"
               (node-size node) (node-level node) (node-label node) (node-color node) (node-density node))))
 
-(defmethod recalc-colors ((tree qtree-node))
+(defmethod recalc-colors ((tree qtree))
     (recalc-colors (tree-root-node tree)))
 
 (defmethod recalc-colors ((node qtree-node))
@@ -146,7 +152,7 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
 (defmethod add-black-pixel ((node qtree-node) x y &key (path nil))
   (if (= 1 (node-size node))	; hit the bottom
       (progn           ; todo remove progn
-        (format t "Path = ~a~%" (cons (node-orient node) path))
+;;        (format t "Path = ~a~%" (cons (node-orient node) path))
         (setf (node-color node) +black-color+))
       ;; else
       (let ((half-size (/ (node-size node) 2)) (index 3))
@@ -185,6 +191,7 @@ undelying nodes. Color of node with size 1 is +white-color+ or +black-color+."))
        (add-black-pixel (nth index (node-childs node))  x y
                         :path (cons (node-orient node) path) ))))
 
+
 (defun get-node-by-path (node path)
   "Recursive go throgh the tree and find node with PATH."
   (when (null node) (error "Node path can't be found."))
@@ -215,7 +222,7 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
                (dolist (p pathes-list)
                  (setf nd (get-node-by-path root-node (reverse  p)))
                  (when (funcall condition nd :path path :state state)
-                   ;; (format t "SET label (~a) -> (~a) ~%" p (node-label node))
+                   ;; (format t "SET label (~a) - > (~a) ~%" p (node-label node))
                    (push p stack-for-pathes)))
 
                (setf pathes-list nil)
@@ -232,6 +239,29 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
   (let ((state `(:label 1 :condition ,condition :min-node-size ,(/ min-node-size 2)
                         :root-node ,(tree-root-node tree))))
     (map-tree tree #'label-neib-r :path nil :state state )))
+
+
+(defmethod tree-slice->file ((tree qtree) size image-filename)
+  (let ((image (png:make-image (tree-size tree) (tree-size tree) 1 8)))
+    (fill-image image 255)
+    (map-tree tree #'(lambda (node &key path state)
+                       (declare (ignore state))
+                       ;; (and (= 1 (node-size node))  (< 0  (node-color node)))
+                       ;; (and (= 1 (node-label node)) (= 2 (node-size node)))
+                       (when (and (eq size (node-size node)) (< 0 (node-color node)))
+                         (let* ((xy (offset path))
+                                (x (first xy))
+                                (y (second xy)))
+                           (setf (aref image y x 0) +black-color+)))))
+    (save-image image image-filename)))
+
+(defmethod tree-slice->hash ((tree qtree) size)
+  (let ((image-hash (make-hash-table :test #'equal)))
+    (map-tree tree #'(lambda (node &key path state)
+                       (declare (ignore state))
+                       (when (and (eq size (node-size node)) (< 0 (node-color node)))
+                         (setf (gethash (offset path) image-hash) +black-color+))))
+    image-hash))
 ;;------------------------------------------------------------
 ;; functions section
 ;;------------------------------------------------------------
@@ -342,17 +372,3 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
                            (setf (aref image y x 0) +black-color+)))))
     (save-image image image-filename)))
 
-(defun tree-slice->file (tree size image-filename)
-  "Dump TREE nodes from one slice to image file. This function is for debuging."
-  (let ((image (png:make-image (tree-size tree) (tree-size tree) 1 8)))
-    (fill-image image 255)
-    (map-tree tree #'(lambda (node &key path state)
-                       (declare (ignore state))
-                       ;; (and (= 1 (node-size node))  (< 0  (node-color node)))
-                       ;; (and (= 1 (node-label node)) (= 2 (node-size node)))
-                       (when (and (eq size (node-size node)) (< 0 (node-color node)))
-                         (let* ((xy (offset path))
-                                (x (first xy))
-                                (y (second xy)))
-                           (setf (aref image y x 0) +black-color+)))))
-    (save-image image image-filename)))

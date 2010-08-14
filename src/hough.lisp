@@ -3,15 +3,17 @@
 
 ;; Hough transformation module
 ;; using for search circles
+;; todo circles can't be intersect (or set flag)
+;; todo set minumal radius too
+
+
 
 (defun get-near-points (point points-list max-distance)
-  "Get list of points that are at a `max-distance` or closer to `point`."
+  "Get list of points that are at a MAX-DISTANCE or closer to POINT."
   (let (near-points)
     (dolist (pt points-list)
       (let ((distance-to-pt (get-points-distance point pt)))
-        (when (and
-               (>= max-distance distance-to-pt)
-               (< 0 distance-to-pt))
+        (when (>= max-distance distance-to-pt)
           (push pt near-points))))
     near-points))
 
@@ -118,48 +120,66 @@ Returns average circle (average center and average radius)."
 (defun merge-hashed-circles (circles-hash)
   "Merge of several hashes circles in one.
 As circles may have offsets during the vectorization process, inside CIRCLES-HASH
-may real cirlces consists of several circles with small offset of center point ( < 3 pt)
+may real circles consists of several circles with small offset of center point ( < 3 pt)
 and small offset from circle radius. This method merge such circles
  *putting all points in one resulting circle*.
 Resulting circle and its points writes to CIRCLES-HASH, other circles removed from it."
   (loop for circle being the hash-key of circles-hash do
        (find-similar-circles circle circles-hash)))
 
-(defun find-circles (points-hash max-distance)
+(defun find-circles (points-hash max-distance min-radius)
   "Find circles by Hough transformation method."
+
   (let ((circles-hash (make-hash-table :test 'equal))
         (points-list (hashtable-keys-to-list points-hash))
         circle-params
         near-points-list
         p1 (i 0))
-    (loop while (< 0 (length points-list)) do
-         (progn
-           (incf i)
-           (when (get-debug-mode)
-             (format t "tick ~a. List length = ~a...~%" i (length points-list)))
-           (setf p1 (first points-list))
-           (setf points-list (cdr points-list))
-           (setf near-points-list (get-near-points p1 points-list max-distance))
-           (dolist (p2 near-points-list)
-             (dolist (p3 near-points-list)
-               (setf circle-params (get-circle-radius-and-center p1 p2 p3 max-distance))
-               (when circle-params
-                 ;;     (format t "Circle params: ~a~%" circle-params)
-                 (let ((hash-val (gethash circle-params circles-hash)))
-                   (setf hash-val (push-to-list-if-not-present hash-val p1 p2 p3))
-                   (setf (gethash circle-params circles-hash) hash-val)))))
-           ;;    (format t "Circle params: ~a~%" circles-hash)))
 
-           (loop for circle-params being the hash-key of circles-hash do
-                (let ((lst (gethash circle-params circles-hash)))
-                  (when (> 5 (length lst)) ; change this to more complex condition
-                    (remhash circle-params circles-hash))))
-           (merge-hashed-circles circles-hash)))
+    (labels ((analyse-circle (circle points min-radius)
+               (let* ((radius (first circle))
+                      (center (second circle)))
+                 ;;      angles angle-step prev-angle (steps-total 0))
+                 ;; (dolist (p points)
+                 ;;   (push (round (get-tilt-angle (list center p))) angles))
+                 (when (and (<= min-radius radius) (> 13 (length points)))
+                   (remhash circle circles-hash))
 
-    (loop for circle being the hash-key of circles-hash do
-         (when (> 10 (length (gethash circle circles-hash)))
-           (remhash circle circles-hash)))
-    circles-hash))
+                     ;; search arcs HERE
+                   )))
+
+      (loop while (< 0 (length points-list)) do
+           (progn
+             (incf i)
+             (when (get-debug-mode)
+               (format t "tick ~a. List length = ~a...~%" i (length points-list)))
+             (setf p1 (pop points-list))
+             (setf near-points-list (get-near-points p1 points-list max-distance))
+             (format t "point ~A proceed. Near points: ~A  ~%"
+                     (length points-list) (length near-points-list))
+
+             (dolist (p2 near-points-list)
+               (dolist (p3 near-points-list)
+                 (setf circle-params (get-circle-radius-and-center p1 p2 p3 max-distance))
+                 (when circle-params
+                   ;;   (format t "Circle params: ~a~%" circle-params)
+                   (let ((hash-val (gethash circle-params circles-hash)))
+                     (setf hash-val (push-to-list-if-not-present hash-val p1 p2 p3))
+                     (setf (gethash circle-params circles-hash) hash-val)))))
+             ;;    (format t "Circle params: ~a~%" circles-hash)))
+
+             (loop for circle being the hash-key of circles-hash
+                using (hash-value points)
+                do
+                  (analyse-circle circle points min-radius))
+
+             ;; (let ((lst (gethash circle circles-hash)))
+             ;;   (when (> 10 (length lst)) ; change this to more complex condition
+             ;;     (remhash circle circles-hash))))
+             ))
+      ;;    (merge-hashed-circles circles-hash)
+
+      circles-hash)))
 
 (defun get-max-angle (radius)
   "Get maximum angle distance for specified RADIUS."
@@ -167,31 +187,72 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
     (when (<= radius (first rad-condition))
       (return-from get-max-angle (second rad-condition)))) 0)
 
-(defun analyse-circles (circles-hash)
-  "Analysing each circle of it's a circle, an arc or jist points set.
-Return 2 hash tables in list: arcs and circles."
-  (flet ((analyse-circle (circle points)
-           (let* ((radius (first circle))
-                  (center (second circle))
-                  angles)
-             (dolist (p points)
-               (push (round (get-tilt-angle (list p center))) angles))
-             (format t "Angles before sort ~a~%" angles)
-             (setf angles (sort angles #'<))
-             (format t "Angles after sort ~a~%" angles)
-             ;; search arcs HERE
-             ;; (let ((start-angle (first angles))
-             ;;     arc)
-             ;;   (loop for i from 1 to (length angles))
-             ;;   (if (aref
+(defun remove-overlaping-circles (circles-hash)
+  "Remove overlapping circles from CIRCLES-HASH."
+  (let* ((circles
+         (loop for circle being the hash-key of circles-hash collect circle))
+        (cur-circle (pop circles)))
+    (
+    (dolist (circle circles)
+      (
+  ;; (loop for circle being the hash-key of circles-hash
+  ;;    using (hash-value points)
+  ;;    do
+  ;;      (
+  ;;      ))
 
-             (when (get-debug-mode)
-               (format t "Condition = ~a ~%" (get-max-angle radius))
-               (format t "Circle points = ~a ~%" points)
-               (format t "Circle: ~a      angles: ~a~%" circle angles)))))
-    (let ((new-hash-arcs    (make-hash-table :test #'equal))
-          (new-hash-circles (make-hash-table :test #'equal)))
 
-      (maphash #'(lambda (circle points)
-                   (analyse-circle circle points)) circles-hash))))
+
+;; (defun analyse-circles (circles-hash)
+;;   "Analysing each circle if it's a circle, an arc or just a points set.
+;; Return 2 hash tables in list: arcs and circles."
+;;   (let ((new-hash-arcs    (make-hash-table :test #'equal))
+;;         (new-hash-circles (make-hash-table :test #'equal)))
+;;     (declare (ignore new-hash-arcs))
+;;     (labels ((analyse-circle (circle points)
+;;                (let* ((radius (first circle))
+;;                       (center (second circle))
+;;                       angles angle-step prev-angle (steps-total 0))
+;;                  (dolist (p points)
+;;                    (push (round (get-tilt-angle (list center p))) angles))
+;;                  (when (< 10 (length angles))
+;;                    ;; (format t "Angles before sort ~a~%" angles)
+;;                    ;; (setf angles (sort angles #'<))
+;;                    ;; (format t "Angles after sort ~a~%" angles)
+
+;;                    ;; ;; set angle-step
+;;                    ;; (cond
+;;                    ;;   ((> 10 radius)
+;;                    ;;    (setf angle-step 15))
+;;                    ;;   ((> 20 radius)
+;;                    ;;    (setf angle-step 10))
+;;                    ;;   (t
+;;                    ;;    (setf angle-step 5)))
+
+;;                    ;; (setf prev-angle (first angles))
+;;                    ;; (dolist (angle (rest angles))
+;;                    ;;   (if (> angle-step (- angle prev-angle))
+;;                    ;;       (progn
+;;                    ;;         (incf steps-total)
+;;                    ;;         (setf prev-angle angle))
+;;                    ;;       (return)))
+
+;; ;;                   (when (<= (/ 360 angle-step) steps-total)
+;;                    (when (<= 19 (length angles))
+;;                      (setf (gethash circle new-hash-circles) points))
+
+;;                      ;; search arcs HERE
+;;                      ;; (let ((start-angle (first angles))
+;;                      ;;     arc)
+;;                      ;;   (loop for i from 1 to (length angles))
+;;                      ;;   (if (aref
+
+;;                      (when (get-debug-mode)
+;;                        (format t "Condition = ~a ~%" (get-max-angle radius))
+;;                        (format t "Circle points = ~a ~%" points)
+;;                        (format t "Circle: ~a      angles: ~a~%" circle angles))))))
+
+;;       (maphash #'(lambda (circle points)
+;;                    (analyse-circle circle points)) circles-hash))
+;;     new-hash-circles))
 

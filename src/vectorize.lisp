@@ -52,10 +52,18 @@
   (let* ((p1 (first line))
 	 (p2 (second line))
 	 (dx (- (first p1) (first p2)))
-	 (dy (- (second p1) (second p2))))
+	 (dy (- (second p1) (second p2)))
+         (dg (if (= 0 dx)
+                 90
+                 (rad-to-degree (atan (/ dy dx))))))
+    ;; correct value, beacause atan range is [-pi/2; pi/2]
     (cond
-      ((= 0 dx) 90)
-      (t (rad-to-degree (atan (/ dy dx)))))))
+      ((and (< 0 dx))
+       (+ 180 dg))
+      ((and (> 0 dx) (> 0  dg))
+       (+ 360 dg))
+      (t
+       dg))))
 
 (defun compare-points (x y)
   "Compare two points, point less if it plased from left and(or) above another point."
