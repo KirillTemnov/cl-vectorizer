@@ -122,6 +122,16 @@
 
 (setf (getf *settings* :max-slope-angle) 5)
 
+(setf (getf *settings* :circles-tolerance-func)  #'(lambda (circle value)
+                                (let ((radius (first circle)))
+                                  (cond
+                                    ((< 30 radius) (< 7000 value))
+                                    ((< 20 radius) (< 6000 value))
+                                    ((< 15 radius) (< 5000 value))
+                                    ((< 10 radius) (< 4000 value))
+                                    ((< 1000 value) t)
+                                    (t nil)))))
+
 (setf (getf *settings* :line-search-radius) 4)
 
 (setf (getf *settings* :max-noise-line-length) 3)
@@ -222,3 +232,7 @@ abc
 (property angles-step-for-circle
 	  :set-docstring "Set angles for analyzing circles and arcs."
 	  :get-docstring "Get angles for analyzing circles and arcs.")
+
+(property circles-tolerance-func             ; todo use for debug purposes
+          :set-docstring "Set circles tolerance function change with caution."
+          :get-docstring "Get circles tolerance function.")

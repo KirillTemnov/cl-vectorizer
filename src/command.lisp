@@ -156,39 +156,38 @@ TODO Add default values.
 
     lines-ht))
 
-(defun get-image-circles (infile &key (outfile (change-extension infile "png")))
+(defun get-image-circles (infile min-radius &key (outfile (change-extension infile "png")))
   "Thin image and extract circles from it."
   (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
 	 (image (load-image image-path))
 	 (w (png:image-width image))
 	 (h (png:image-height image))
-;;	 (ht (thin-image-hash (image-to-hashtable image)))
-	 (ht (image-to-hashtable image))
+	 (ht (vectorize-hash->points (thin-image-hash (image-to-hashtable image))))
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
 	 circles-hash
 	 lines-ht
 	 points-ht)
-
+    (declare (ignore lines-ht points-ht))
     (save-image (hashtable-to-image ht w h) (get-out-path outfile))
 
-    (setf lines-ht (merge-near-lines (vectorize-hash ht)))
+    ;; (setf lines-ht (merge-near-lines (vectorize-hash ht)))
 
-    (setf points-ht (hashlines-to-hashpoints lines-ht))
-    ;; test
+    ;; (setf points-ht (hashlines-to-hashpoints lines-ht))
+    ;; ;; test
 
-    (save-image (hashtable-to-image points-ht w h) (get-out-path outfile))
+    ;; (save-image (hashtable-to-image points-ht w h) (get-out-path outfile))
 
-    (when (get-debug-mode)
-      (format t "Creating circles, image have ~a points" (hash-table-count points-ht)))
+    ;; (when (get-debug-mode)
+    ;;   (format t "Creating circles, image have ~a points" (hash-table-count points-ht)))
 
 
-    (setf circles-hash (find-circles points-ht (get-max-circle-diameter)))
+    ;; (setf circles-hash (find-circles points-ht (get-max-circle-diameter)))
+    (setf circles-hash  (find-circles2 ht (get-max-circle-diameter) min-radius))
 
-    (analyse-circles circles-hash)
 
     ;; show points on image
-    (loop for circle being the hash-key of circles-hash do
-    	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
+    ;; (loop for circle being the hash-key of circles-hash do
+    ;; 	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
 
     (hashtable-circles-to-svg-manager circles-hash manager)
 
