@@ -162,7 +162,7 @@ TODO Add default values.
 	 (image (load-image image-path))
 	 (w (png:image-width image))
 	 (h (png:image-height image))
-	 (ht (thin-image-hash (image-to-hashtable image)))
+	 (ht (vectorize-hash->points (thin-image-hash (image-to-hashtable image))))
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
 	 circles-hash
 	 lines-ht
@@ -182,12 +182,12 @@ TODO Add default values.
 
 
     ;; (setf circles-hash (find-circles points-ht (get-max-circle-diameter)))
-    (setf circles-hash  (find-circles ht (get-max-circle-diameter) min-radius))
+    (setf circles-hash  (find-circles2 ht (get-max-circle-diameter) min-radius))
 
 
     ;; show points on image
-    (loop for circle being the hash-key of circles-hash do
-    	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
+    ;; (loop for circle being the hash-key of circles-hash do
+    ;; 	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
 
     (hashtable-circles-to-svg-manager circles-hash manager)
 

@@ -190,14 +190,22 @@
 	       (make-line start-point (first line))))))))
 
 (defun point-have-one-neibhour? (point hash-points)
-  "Returns T if point have only one neibhour."
+  "Returns T if POINT have only one neibhour."
   (= 1 (apply #'+ (get-neibhour-points point hash-points))))
+
+(defun point-have-two-or-more-neibhours?  (point hash-points)
+  "Returns T in POINT have >= 2 neibhours."
+  (<= 2 (apply #'+ (get-neibhour-points point hash-points))))
 
 (defun vectorize-hash (hash-points)
   "Vectorize hash with points and return hash, consists of lines (as keys)."
   (let ((hash-lines (make-hash-table :test 'equal ))
 	(line nil) (hash-len (1+ (hash-table-count hash-points))))
-    (loop while (and (> hash-len (hash-table-count hash-points)) (< 0 (hash-table-count hash-points))) do
+    (loop while
+         (and
+          (> hash-len (hash-table-count hash-points))
+          (< 0 (hash-table-count hash-points)))
+       do
 	 (setf hash-len (hash-table-count hash-points))
 
 	 (loop for point being the hash-key of hash-points do
@@ -213,6 +221,21 @@
 	      )
 	 (when (get-debug-mode)	 (format t "hash points: ~a~%" hash-points)))
     hash-lines))
+
+(defun vectorize-hash->points (hash-points)
+  "Vectorize HASH-POINTS to lines and add middle points of lines in resulting hash."
+;;  (let ((hash-lines (vectorize-hash hash-points)))
+    ;; (loop for point being the hash-key of hash-points
+       ;; using (hash-value line) do
+       ;;   (when (line? line)
+       ;;     (let ((center (list
+       ;;                    (round (/ (+ (first (first line)) (first (second line))) 2))
+       ;;                    (round (/ (+ (second (first line)) (second (second line))) 2)))))
+       ;;       (setf (gethash center hash-lines) t))))
+  (loop for point being the hash-key of hash-points do
+       (when (point-have-two-or-more-neibhours? point hash-points)
+         (remhash point hash-points)))
+    hash-points)
 
 ;;TODO write it better
 (defun can-merge? (line1 line2)
