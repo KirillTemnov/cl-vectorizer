@@ -7,7 +7,6 @@
 ;; todo set minumal radius too
 
 
-
 (defun get-near-points (point points-list max-distance)
   "Get list of points that are at a MAX-DISTANCE or closer to POINT."
   (let (near-points)
@@ -42,7 +41,7 @@ Returns list (radius (cx cy))."
   ;;     1 (summand2)(x2 - x3) - (summand1)(x1 - x2)
   ;; b = - -----------------------------------------
   ;;     2                  divisor
-
+;  (declare (optimize (speed 3) (safety 0))
   (let* ((x1 (first p1))
          (x2 (first p2))
          (x3 (first p3))
@@ -52,6 +51,8 @@ Returns list (radius (cx cy))."
          (divisor (-
                    (* (- x2 x3) (- y1 y2))
                    (* (- x1 x2) (- y2 y3)))))
+    (declare (number x1 x2 x3 y1 y2 y3 divisor))
+
     (if (= 0 divisor)
         nil
         (let* ((summand1 (-
@@ -77,6 +78,7 @@ Returns list (radius (cx cy))."
                (radius (sqrt (+
                               (expt (- x1 a) 2)
                               (expt (- y1 b) 2)))))
+          (declare (number summand1 summand2 a b radius))
           (list (round radius) (list (round a) (round b)))))))
 
 (defun can-build-circle? (p1 p2 p3 max-diameter)
@@ -188,42 +190,64 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
 
       circles-hash)))
 
-;; (defun separate-points-to-grid (points-hash grid-size)
-;;   "Separate points in POINTS-HASH to 'cells' of grid.
-;;  Function returns list of list of points.
-;;  Each cell have definite place on 'canvas' where points located,
-;;  thereby canvas separates by a grid. Cells of grid are squares and
-;;  they overlap each other on a half width, so,
-;;  returned result contains dublicates of most of the points."
-;;   (let ((points-list  (sort (hashtable-keys-to-list points-hash)
+(defun separate-points-to-grid (points-hash grid-size)
+  "Separate points in POINTS-HASH to 'cells' of grid.
+ Function returns list of list of points.
+ Each cell have definite place on 'canvas' where points located,
+ thereby canvas separates by a grid. Cells of grid are squares and
+ they overlap each other on a half width, so,
+ returned result contains dublicates of most of the points."
+  (let ((points-list  (hashtable-keys-to-list points-hash))
+;; (sort (hashtable-keys-to-list points-hash)
 ;;                            #'(lambda (point1 point2)
 ;;                                (if (<= (first point1) (first point2))
 ;;                                    t nil))))
+        (max-xy (get-max-coordinates points-hash))
+        (grid-size/2 (round (/ grid-size 2)))
+        points-grid-list)
+
+    (loop for x from 0 to (first max-xy) by grid-size/2 do
+         (loop for y from 0 to (second max-xy) by grid-size/2 do
+              (let ((x2 (+ grid-size x))
+                    (y2 (+ grid-size y))
+                    current-list)
+                (dolist (point points-list)
+                  (when (and
+                         (<= x (first point)  x2)
+                         (<= y (second point) y2))
+                    (push point current-list)))
+                (push current-list points-grid-list))))
+    points-grid-list))
+
 
 (defun find-circles2 (points-hash max-distance min-radius)
   "Find circles by Hough transformation."
-  (let* ((points-list (sort (hashtable-keys-to-list points-hash)
-                           #'(lambda (point1 point2)
-                               (if (<= (first point1) (first point2))
-                                   t nil))))
-        (circles-hash (make-hash-table :test #'equal :size 2048))
-        circle-params
-        (index (length points-list)))
-    (dolist (p1 points-list)
-      (format t "tick ~A~%" index)
-      (decf index)
-      (dolist (p2 points-list)
-        (dolist (p3 points-list)
-          (when (can-build-circle? p1 p2 p3 max-distance)
-            (setf circle-params (get-circle-radius-and-center p1 p2 p3))
-            (when (and
-                   circle-params
-                   (> max-distance (first circle-params))
-                   (< min-radius (first circle-params)))
+  (declare (optimize (speed 3)))
 
-              (if (gethash circle-params circles-hash)
-                  (incf (gethash circle-params circles-hash))
-                  (setf (gethash circle-params circles-hash) 1)))))))
+  (let* ((points-list-grid (separate-points-to-grid points-hash max-distance))
+
+         (circles-hash (make-hash-table :test #'equal :size 2048))
+         circle-params
+         (index 0))
+;;        (index (length points-list-grid)))
+
+    (dolist (points-list points-list-grid)
+      (format t "Tick = ~A~%" index)
+      (incf index)
+      (dolist (p1 points-list)
+        (dolist (p2 points-list)
+          (dolist (p3 points-list)
+            (when (can-build-circle? p1 p2 p3 max-distance)
+              (setf circle-params (get-circle-radius-and-center p1 p2 p3))
+              (when (and
+                     circle-params
+                     (> max-distance (first circle-params))
+                     (< min-radius (first circle-params)))
+
+                (if (gethash circle-params circles-hash)
+                    (incf (gethash circle-params circles-hash))
+                    (setf (gethash circle-params circles-hash) 1))))))))
+
     (loop for circle being the hash-key of circles-hash
        using (hash-value times) do
          (unless (funcall (get-circles-tolerance-func) circle times); (get-circles-tolerance))

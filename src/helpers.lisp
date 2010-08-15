@@ -6,6 +6,19 @@
   (maphash #'(lambda (key value)  (format t "The value associated with the key ~S is ~S~%" key value))
  hash))
 
+(defun get-max-coordinates (hash-points)
+  "Get maximum X and Y coordinates.
+ Returned values may not belong to a single point."
+  (let ((max-x 0) (max-y 0))
+    (loop for point being the hash-key of hash-points
+       do
+         (unless (null point)
+           (when (< max-x (first point))
+             (setf max-x (first point)))
+           (when (< max-y (second point))
+             (setf max-y (second point)))))
+    (list max-x max-y)))
+
 
 (defun tokenize (string)
   "Split string by space to list of srings"
