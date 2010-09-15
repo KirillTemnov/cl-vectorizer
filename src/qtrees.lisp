@@ -334,9 +334,9 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
          (image (load-image image-path))
          (tree (make-instance 'qtree :size (max (png:image-width image)  (png:image-height image)))))
     (fill-tree tree (image-to-hashtable image))
+    (recalc-colors tree)
     ;; todo delete this
-    (save-image (hashtable-to-image (tree-image-hash tree)
-                                    (tree-size tree) (tree-size tree)) #p"/tmp/out.png")
+    (save-image (hashtable-to-image (tree-image-hash tree))  #p"/tmp/out.png")
     (format t "Tree created successfuly ~%")
     tree))
 

@@ -129,15 +129,15 @@ TODO Add default values.
   "Thin image in one file and save to another."
   (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
 	 (image (load-image image-path))
-	 (w (png:image-width image))
-	 (h (png:image-height image))
+         (w (png:image-width image))
+         (h (png:image-height image))
 	 (ht (thin-image-hash (image-to-hashtable image)))
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
 	 lines-ht)
 
     (when (get-debug-mode) (format t "format image ~a ... ~%"  (get-out-path outfile)))
 
-    (save-image (hashtable-to-image ht w h) (get-out-path outfile))
+    (save-image (hashtable-to-image ht) (get-out-path outfile))
 
     (when (get-debug-mode)
       (format t "vectorize ... ~%" )
@@ -158,24 +158,29 @@ TODO Add default values.
 
 (defun get-image-circles (infile min-radius &key (outfile (change-extension infile "png")))
   "Thin image and extract circles from it."
-  (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
-	 (image (load-image image-path))
-	 (w (png:image-width image))
-	 (h (png:image-height image))
-	 (ht (vectorize-hash->points (thin-image-hash (image-to-hashtable image))))
-	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
+  (let* ((tree (make-qt infile))
+;;	 (ht (vectorize-hash->points (tree-slice->hash tree 8)))
+	 (ht  (tree-slice->hash tree 8))
+         (max-coords (get-max-coordinates ht))
+	 (manager (create-svg-manager
+                   (format nil "~apx"
+                           (first max-coords))
+                           (format nil "~apx"  (second max-coords))))
 	 circles-hash
 	 lines-ht
 	 points-ht)
     (declare (ignore lines-ht points-ht))
-    (save-image (hashtable-to-image ht w h) (get-out-path outfile))
+    ;; (format t "SAVING IMAGE------------------------------>>>>>>>>>>~%"  )
+    ;; (print-hash ht)
+    (save-image (hashtable-to-image ht) (get-out-path outfile))
 
+    (format t "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<----------AFTER SAVE,,,,~%"  )
     ;; (setf lines-ht (merge-near-lines (vectorize-hash ht)))
 
     ;; (setf points-ht (hashlines-to-hashpoints lines-ht))
     ;; ;; test
 
-    ;; (save-image (hashtable-to-image points-ht w h) (get-out-path outfile))
+    ;; (save-image (hashtable-to-image points-ht) (get-out-path outfile))
 
     ;; (when (get-debug-mode)
     ;;   (format t "Creating circles, image have ~a points" (hash-table-count points-ht)))

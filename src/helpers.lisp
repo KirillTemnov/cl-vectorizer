@@ -2,7 +2,7 @@
 (in-package #:cl-vectorizer)
 
 (defun print-hash (hash)
-  "print hash table keys and values"
+  "Print hash table keys and values"
   (maphash #'(lambda (key value)  (format t "The value associated with the key ~S is ~S~%" key value))
  hash))
 
@@ -137,9 +137,12 @@ Example:
 		  (setf (gethash hash-key ht) +black+))))
     ht))
 
-(defun hashtable-to-image (hashtable width height &key (color +black+) (bg-color +white+))
+(defun hashtable-to-image (hashtable  &key (color +black+) (bg-color +white+))
   "Create image from hash table"
-  (let ((image (png:make-image height width 1))
+  (let* ((max-coordinates (get-max-coordinates hashtable))
+         (width (first max-coordinates))
+         (height (second max-coordinates))
+         (image (png:make-image height width 1))
 	(hash-key nil))
     (loop for i from 0 to (1- width) do
 	 (loop for j from 0 to (1- height) do
@@ -330,21 +333,21 @@ Example:
 	   (remhash (second line) hash-lines)))
     hash-lines))
 
-(defun push-to-list (list &rest elems )
-  "Push all elements to list."
-  (dolist (i elems)
+(defun push-to-list (list &rest elements )
+  "Push all ELEMENTS to LIST."
+  (dolist (i elements)
     (push i list))
   list)
 
-(defun push-to-list-if-not-present (list &rest elems)
-  "Push elements to list if they don't already in `list`."
-  (dolist (i elems)
+(defun push-to-list-if-not-present (list &rest elements)
+  "Push ELEMENTS to list if they don't already in LIST."
+  (dolist (i elements)
     (when (not (member i list :test #'equal))
       (push i list)))
   list)
 
 (defun avg (&rest arguments)
-  "Average value of list arguments."
+  "Average value of list ARGUMENTS."
   (/ (apply #'+ arguments) (length arguments)))
 
 
@@ -364,4 +367,13 @@ Example:
 	(push i list1))))
   list1)
 
-
+#|
+ (defun duplicate (item times)
+  "Duplicate ITEM TIMES times and return RESULT as a list"
+  (let ((result))
+    (format t "times = ~A~%" times)
+    (loop while (< 0 times) do
+         (decf times)
+         (push item result))
+    result))
+|#

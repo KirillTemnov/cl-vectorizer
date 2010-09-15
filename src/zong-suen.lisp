@@ -62,6 +62,7 @@ Return t if condition is satisfied, otherwise nil."
   "Thin image and return hash table, containing points as a key and +black+ as value."
   (let ((deleted 0)
 	(ht (make-hash-table :test 'equal :size (round (* (hash-table-size hash-points) .7)))))
+    ;; todo create labels remove-by-condition and move point there
     ;; first condition
     (loop for point being the hash-key of hash-points do
 	 (if (zong-suen-first-condition point hash-points)
@@ -88,7 +89,7 @@ Return t if condition is satisfied, otherwise nil."
     (when (get-debug-mode) (format t "second iteration. deleted ~d points ~%"  (hash-table-count ht)))
 
     (setf deleted (+ deleted (hash-table-count ht)))
-    (clrhash ht)
+    (clrhash ht)                        ; don't needed
 
 
     (if (< 0 deleted)
@@ -103,7 +104,7 @@ Return t if condition is satisfied, otherwise nil."
 		 (when (get-debug-mode) (format t "-------------new delete -------------~%"))
 
 		 (loop for point being the hash-key of hash-points do
-		      (progn
+		      (progn            ;change this block for remove-by-condition call
 			(when (get-debug-mode)
 			  (format t "point ~a [~a] (sum = ~a)~%" point (get-neibhour-points point hash-points) (apply #'+  (get-neibhour-points point hash-points))))
 		      (when (should-delete-point? point hash-points)

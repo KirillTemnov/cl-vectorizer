@@ -41,7 +41,7 @@ Returns list (radius (cx cy))."
   ;;     1 (summand2)(x2 - x3) - (summand1)(x1 - x2)
   ;; b = - -----------------------------------------
   ;;     2                  divisor
-;  (declare (optimize (speed 3) (safety 0))
+  (declare (optimize (speed 3) (safety 0)))
   (let* ((x1 (first p1))
          (x2 (first p2))
          (x3 (first p3))
