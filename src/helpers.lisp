@@ -367,6 +367,26 @@ Example:
 	(push i list1))))
   list1)
 
+(defun vector-min (vector)
+  "Get minimum value from VECTOR. If vector is empty, return nil."
+  (if (< 0 (length vector))
+    (let ((min-value (aref vector 0)))
+      (loop for i from 0 to (1- (length vector)) do
+           (when (< (aref vector i) min-value)
+             (setf min-value (aref vector i))))
+      min-value)
+    nil))
+
+(defun vector-max (vector)
+  "Get maximum value from VECTOR. If vector is empty, return nil."
+  (if (< 0 (length vector))
+      (let ((max-value 0))
+        (loop for i from 0 to (1- (length vector)) do
+             (when (< max-value (aref vector i))
+               (setf max-value (aref vector i))))
+        max-value)
+      nil))
+
 #|
  (defun duplicate (item times)
   "Duplicate ITEM TIMES times and return RESULT as a list"
