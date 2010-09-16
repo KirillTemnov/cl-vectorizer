@@ -13,11 +13,11 @@
   :long-description "Vectorizer for raster images. Can save result to dxf or svg."
   :components ((:module "src"
 			:components ((:file "packages")
+                                     (:file "histogram")
 				     (:file "helpers" :depends-on ("packages"))
 				     (:file "command" :depends-on ("packages" "helpers"))
 				     (:file "zong-suen" :depends-on ("packages" "helpers"))
 				     (:file "vectorize" :depends-on ("packages" "helpers"))
-                                     (:file "histogram")
 				     (:file "hough" :depends-on ("packages" "helpers" "histogram"))
 				     (:file "svg" :depends-on ("packages" "helpers"))
 				     (:file "qtrees" :depends-on ("packages" "helpers"))
