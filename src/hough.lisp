@@ -133,7 +133,7 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
   (loop for circle being the hash-key of circles-hash do
        (find-similar-circles circle circles-hash)))
 
-(defun find-circles (points-hash max-distance min-radius)
+(defun find-circles0 (points-hash max-distance min-radius)
   "Find circles by Hough transformation method."
 
   (let ((circles-hash (make-hash-table :test #'equal))
@@ -219,10 +219,53 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
                 (push current-list points-grid-list))))
     points-grid-list))
 
+(defun find-circles (points-hash possibly-circles-list
+                     &key (max-distance 100) (max-radius-error 3))
+  "Find circles, preselected by histogram analisys"
+  (let ((circles-hash (make-hash-table :test #'equal :size 64))
+          suitable-points)
+    (dolist (circle possibly-circles-list)
+      (let ((circle-center (second circle))
+            (circle-radius (first circle))
+            circle-params)
+        ;; select points, that indent from circle center to
+        ;; circle-radius value +/- max-radius-error.
+        (loop for point being the hash-key of points-hash do
+             (when (< (abs (- circle-radius (get-points-distance circle-center point)))
+                      max-radius-error)
+               (push point suitable-points))
+             (setf (gethash circle circles-hash) 1))
+
+        (format t "circle: ~A~%" circle)
+        (format t "Point found: ~A~%" (length suitable-points))
+        ;; eval Hough transform on this points
+;;        (block nested-loops
+          (dolist (p1 suitable-points)
+            (when (< 10000 (gethash circle circles-hash))
+              (return))
+            (dolist (p2 suitable-points)
+              (when (< 10000 (gethash circle circles-hash))
+                (return))
+              (dolist (p3 suitable-points)
+                (when (and                  ; unless .. or .. ?
+                       (not (equal p1 p2))
+                       (not (equal p2 p3))
+                       (not (equal p1 p3)))
+                  (setf circle-params (get-circle-radius-and-center p1 p2 p3))
+                  (when (and circle-params
+                             (< (abs (- circle-radius (first circle-params))) max-radius-error))
+                    ;; check center!
+
+                    (incf (gethash circle circles-hash)))))))))
+
+    (format t "circles: ~A~%"      (hash-table-count circles-hash))
+    (print-hash circles-hash)
+    circles-hash))
+
 
 (defun find-circles2 (points-hash max-distance min-radius)
   "Find circles by Hough transformation."
-  (declare (optimize (speed 3)))
+;;  (declare (optimize (speed 3)))
 
   (let* ((points-list-grid (separate-points-to-grid points-hash max-distance))
 

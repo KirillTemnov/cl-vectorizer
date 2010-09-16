@@ -156,7 +156,44 @@ TODO Add default values.
 
     lines-ht))
 
-(defun get-image-circles (infile min-radius &key (outfile (change-extension infile "png")))
+(defun get-image-circles (infile min-radius &key (max-radius-error 3)
+                          (outfile (change-extension infile "png")))
+  "Thin image and extract circles from it."
+  (let* (;;(tree (make-qt infile))
+;;	 (ht (vectorize-hash->points (tree-slice->hash tree 8)))
+         (ht (image-to-hashtable (load-image infile)))
+;;	 (ht  (tree-slice->hash tree 2)) ; 8 -> 1
+         (points-list (hashtable-keys-to-list ht))
+         (possibly-circles (find-possibly-circles points-list
+                                                  :min-radius min-radius
+                                                  :max-radius-error max-radius-error))
+         (max-coords (get-max-coordinates ht))
+	 (manager (create-svg-manager
+                   (format nil "~apx"
+                           (first max-coords))
+                           (format nil "~apx"  (second max-coords))))
+	 circles-hash)
+    (setf ht (thin-image-hash ht))
+    (save-image (hashtable-to-image ht) (get-out-path outfile))
+
+    (format t "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<----------AFTER SAVE,,,,~%"  )
+
+
+    ;; (save-image (hashtable-to-image points-ht) (get-out-path outfile))
+
+    (setf circles-hash (find-circles ht possibly-circles :max-radius-error max-radius-error))
+
+
+    ;; show points on image
+    ;; (loop for circle being the hash-key of circles-hash do
+    ;; 	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
+
+    (hashtable-circles-to-svg-manager circles-hash manager)
+
+    (add-entity manager (make-svg-image outfile))
+    (flush-manager manager #p"out.svg")))
+
+(defun get-image-circles2 (infile min-radius &key (outfile (change-extension infile "png")))
   "Thin image and extract circles from it."
   (let* ((tree (make-qt infile))
 ;;	 (ht (vectorize-hash->points (tree-slice->hash tree 8)))
@@ -198,6 +235,7 @@ TODO Add default values.
 
     (add-entity manager (make-svg-image outfile))
     (flush-manager manager #p"out.svg")))
+
 
 (defun guess-format (image-path)
   "Return format of image based on it's DPI.
