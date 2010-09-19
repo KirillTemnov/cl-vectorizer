@@ -138,6 +138,9 @@
 
 (setf (getf *settings* :max-circle-diameter) 10)
 
+(setf (getf *settings* :min-histogram-value-of-circle-center) 30)
+
+(setf (getf *settings* :min-histogram-value-of-circle-edge) 7)
 
 ;; list of radius and max angle between points for this circles
 ;; ((max-radius1 max-angle1) (max-radius2 max-angle2) ... (max-radiusN max-angleN))
@@ -236,3 +239,11 @@ abc
 (property circles-tolerance-func             ; todo use for debug purposes
           :set-docstring "Set circles tolerance function change with caution."
           :get-docstring "Get circles tolerance function.")
+
+(property min-histogram-value-of-circle-center
+          :set-docstring "Set minimum histogram value of circle center (in persent)."
+          :get-docstring "Get minimum histogram value of center center.")
+
+(property min-histogram-value-of-circle-edge
+          :set-docstring "Set minimum histogram value of circle edge (in persent)."
+          :get-docstring "Get minimum histogram value of center edge.")

@@ -41,7 +41,9 @@ Return list with x-histogram and y-histogram in order."
       (format t "y-normalized-histogram : ~% ~A~%" y-histogram))
     (list x-histogram y-histogram)))
 
-(defun find-peaks (histogram  &key (min-peak-value 30) (min-peak-distance 4))
+(defun find-peaks (histogram  &key
+                   (min-peak-value (get-min-histogram-value-of-circle-center))
+                   (min-peak-distance 4))
   "Find peaks on HISTOGRAM that higher than MIN-PEAK-VALUE.
 If two peaks stand from each other closer than MIN-PEAK-DISTANCE, they
 merged into one peak, which placed between them."
@@ -127,7 +129,9 @@ Than MAX-RADIUS-ERROR, add new circle to list."
                     circles-list)))))))
     circles-list))
 
-(defun wave (histogram &key min-radius (min-peak-value 7) (max-radius-error 3))
+(defun wave (histogram &key min-radius
+             (min-peak-value (get-min-histogram-value-of-circle-edge))
+             (max-radius-error 3))
   "Min % of peak, that belongs to a cirle"
   (let* ((big-peaks (find-peaks histogram))
          (peaks (find-peaks histogram :min-peak-value min-peak-value))
