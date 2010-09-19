@@ -33,13 +33,15 @@ Return list containing X-HISTOGRAM and Y-HISTOGRAM."
   "Make X and Y histograms from POINTS-LIST, representing image.
 Histograms normalised to *image width and height* respectvely.
 Return list with x-histogram and y-histogram in order."
-  (let* ((xy-histograms (make-histograms points-list))
-        (x-histogram (normalize-histogram (first xy-histograms)))
-        (y-histogram (normalize-histogram (second xy-histograms))))
-    (when (get-debug-mode)
-      (format t "x-normalized-histogram : ~% ~A~%" x-histogram)
-      (format t "y-normalized-histogram : ~% ~A~%" y-histogram))
-    (list x-histogram y-histogram)))
+  (if (eq nil points-list)
+      '(nil nil)
+      (let* ((xy-histograms (make-histograms points-list))
+             (x-histogram (normalize-histogram (first xy-histograms)))
+             (y-histogram (normalize-histogram (second xy-histograms))))
+        (when (get-debug-mode)
+          (format t "x-normalized-histogram : ~% ~A~%" x-histogram)
+          (format t "y-normalized-histogram : ~% ~A~%" y-histogram))
+        (list x-histogram y-histogram))))
 
 (defun find-peaks (histogram  &key
                    (min-peak-value (get-min-histogram-value-of-circle-center))
@@ -117,15 +119,15 @@ Than MAX-RADIUS-ERROR, add new circle to list."
 ;;            (format t "CIRCLES LIST GENERATION:~A ~%" circles-list)
             (dolist (c circles-list)
               (when  (and
-                      (< (get-points-distance (second c) center-point) max-radius-error)
-                      (<= (abs (- circle-radius (first c)))))
+                      (< (get-points-distance (getf c :center) center-point) max-radius-error)
+                      (<= (abs (- circle-radius (getf c :radius)))))
                 (setf not-save t)))
-            ;; for pushing use hough.lisp storing method: (radius (center-x center-y))
+
             (unless not-save
               (progn
-                (format t "add CIRCLE: ~A~%"
-                        (list circle-radius center-point))
-              (push (list circle-radius center-point)
+                ;; (format t "add CIRCLE: ~A~%"
+                ;;         (list circle-radius center-point))
+              (push (list :radius circle-radius :center center-point :intersect 0)
                     circles-list)))))))
     circles-list))
 
@@ -138,7 +140,7 @@ Than MAX-RADIUS-ERROR, add new circle to list."
          possibly-circles)
          ;; peak-indexes
          ;; (i min-radius))
-;;    (format t "peaks: ~A~%" peaks)
+    ;;(format t "in wave. peaks: ~A~%" peaks)
     ;; (loop while (< i (- (length peaks) min-radius 1)) do
     ;;      (when (< 0 (aref peaks i))
     ;;        (format t "push ~A~%" i)
@@ -170,22 +172,51 @@ Than MAX-RADIUS-ERROR, add new circle to list."
                   (decf l-index)))))
        possibly-circles))
 
-
-(defun find-possibly-circles (points-list &key (min-radius 10) (max-radius-error 3))
+(defun find-possibly-circles (points-hash &key (min-radius 10) (max-radius-error 3) (window-size 100))
   "Find objects like cirlces on image represented by POINTS-LIST (black points)."
-    (let* ((xy-histograms (make-normalised-histograms points-list))
-           (x-histogram (first xy-histograms))
-           (y-histogram (second xy-histograms))
-           (x-possibly-circles (wave x-histogram
-                                     :min-radius min-radius :max-radius-error max-radius-error))
-           (y-possibly-circles (wave y-histogram
-                                     :min-radius min-radius :max-radius-error max-radius-error))
-           (circles (generate-circles x-possibly-circles y-possibly-circles
-                                      :max-radius-error max-radius-error)))
-      (format t "x-possibly-circles: ~A ~%" x-possibly-circles)
-      (format t "y-possibly-circles: ~A ~%" y-possibly-circles)
-      (format t "RESULT ~%~A~%" circles)
-      circles))
+  (let ((points-list (hashtable-keys-to-list points-hash))
+        all-circles
+        final-result)
+;;    (dolist (points-list (separate-points-to-grid points-hash window-size))
+      (let* ((xy-histograms (make-normalised-histograms points-list))
+             (x-histogram (first xy-histograms))
+             (y-histogram (second xy-histograms))
+             (x-possibly-circles (wave x-histogram
+                                       :min-radius min-radius :max-radius-error max-radius-error))
+             (y-possibly-circles (wave y-histogram
+                                       :min-radius min-radius :max-radius-error max-radius-error))
+             (circles (generate-circles x-possibly-circles y-possibly-circles
+                                        :max-radius-error max-radius-error)))
+        (format t "x-possibly-circles: ~A ~%" x-possibly-circles)
+        (format t "y-possibly-circles: ~A ~%" y-possibly-circles)
+        (format t "RESULT ~%~A~%" circles)
+        (setf all-circles (append all-circles circles)))
+;; )
+
+
+    ;; remove overlapping circles
+    (format t "all-circles ~A~%" all-circles)
+
+    ;; (dolist (circle all-circles)
+    ;;   (dolist (c all-circles)
+    ;;     (unless (equal c circle)
+    ;;       (let ((distance (get-points-distance (getf c :center) (getf circle :center)))
+    ;;             (c-radius (getf c :radius))
+    ;;             (circle-radius (getf circle :radius)))
+    ;;         (when (or
+    ;;                (< distance (+ c-radius circle-radius))
+    ;;                (< (max c-radius circle-radius) (+ distance (min c-radius circle-radius))))
+    ;;           (incf (getf circle :intersect)))))))
+
+    ;; for pushing use hough.lisp storing method: (radius (center-x center-y))
+    (dolist (circle all-circles)
+      (when (< (getf circle :intersect) 3)
+        (push (list (getf circle :radius) (getf circle :center)) final-result)))
+    (format t "Final-Result: ~A~%" final-result)
+    (if (< 100 (length final-result))
+           (progn (format t "Error: too many circles ~%"  ) nil)
+           final-result)))
+
 
 ;; (make-normalised-histograms '((3 3) (3 4) (3 5) (4 4) (10 10)))
 ;; (make-histograms z)

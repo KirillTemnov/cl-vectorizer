@@ -157,22 +157,25 @@ TODO Add default values.
     lines-ht))
 
 (defun get-image-circles (infile min-radius &key (max-radius-error 3)
-                          (outfile (change-extension infile "png")))
+                          (outfile (change-extension infile "png"))
+                          (window-size 200))
   "Thin image and extract circles from it."
   (let* (;;(tree (make-qt infile))
 ;;	 (ht (vectorize-hash->points (tree-slice->hash tree 8)))
          (ht (image-to-hashtable (load-image infile)))
 ;;	 (ht  (tree-slice->hash tree 2)) ; 8 -> 1
-         (points-list (hashtable-keys-to-list ht))
-         (possibly-circles (find-possibly-circles points-list
+;;         (points-list (hashtable-keys-to-list ht))
+         (possibly-circles (find-possibly-circles ht
                                                   :min-radius min-radius
-                                                  :max-radius-error max-radius-error))
+                                                  :max-radius-error max-radius-error
+                                                  :window-size window-size))
          (max-coords (get-max-coordinates ht))
 	 (manager (create-svg-manager
                    (format nil "~apx"
                            (first max-coords))
                            (format nil "~apx"  (second max-coords))))
 	 circles-hash)
+    (format t "BEFORE SAVE~%"  )
     (setf ht (thin-image-hash ht))
     (save-image (hashtable-to-image ht) (get-out-path outfile))
 
@@ -189,6 +192,11 @@ TODO Add default values.
     ;; 	 (list-points-to-svg-manager (gethash circle circles-hash) manager))
 
     (hashtable-circles-to-svg-manager circles-hash manager)
+    (draw-grid manager window-size (first max-coords) (second max-coords) :color "blue")
+    (draw-grid manager window-size (first max-coords) (second max-coords)
+               :color "green"
+               :offset-x (floor (/ window-size 2))
+               :offset-y (floor (/ window-size 2)))
 
     (add-entity manager (make-svg-image outfile))
     (flush-manager manager #p"out.svg")))
@@ -200,9 +208,9 @@ TODO Add default values.
 	 (ht  (tree-slice->hash tree 8))
          (max-coords (get-max-coordinates ht))
 	 (manager (create-svg-manager
-                   (format nil "~apx"
+                   (format nil "~Apx"
                            (first max-coords))
-                           (format nil "~apx"  (second max-coords))))
+                           (format nil "~Apx"  (second max-coords))))
 	 circles-hash
 	 lines-ht
 	 points-ht)

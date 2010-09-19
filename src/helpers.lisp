@@ -387,6 +387,30 @@ Example:
         max-value)
       nil))
 
+(defun draw-grid (manager grid-size width height &key (color "black") (offset-x 1) (offset-y 1))
+  "Create grid on managed canvas with GRID-SIZE on square from '(0 0) to (WIDTH HEIGHT)."
+  (let ((x offset-x) (y offset-y) line)
+    (loop while (< x width) do
+         (setf line (make-instance 'svg-line :point1 (list x 0) :point2 (list x height) :stroke color))
+         (add-entity manager line)
+         (incf x grid-size))
+
+    (loop while (< y height) do
+         (setf line (make-instance 'svg-line :point1 (list 0 y) :point2 (list width y) :stroke color))
+         (add-entity manager line)
+         (incf y grid-size))))
+
+
+
+  ;; (loop repeat (1- (floor (/ width grid-size)))
+  ;;    for x = 0 then (+ x grid-size) do
+  ;;      (progn
+  ;;      (loop repeat (1- (floor (/ height grid-size)))
+  ;;         for y = 0 then (+ y grid-size)) do
+  ;;         (let ((line (make-instance 'svg-line :point1 (list x y) :point2 (list (+ x grid-size) (+ y grid-size)))))
+  ;;           (add-entity manager line)))))
+
+
 #|
  (defun duplicate (item times)
   "Duplicate ITEM TIMES times and return RESULT as a list"

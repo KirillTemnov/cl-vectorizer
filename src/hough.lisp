@@ -223,7 +223,7 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
                      &key (max-distance 100) (max-radius-error 3))
   "Find circles, preselected by histogram analisys"
   (let ((circles-hash (make-hash-table :test #'equal :size 64))
-          suitable-points)
+        suitable-points)
     (dolist (circle possibly-circles-list)
       (let ((circle-center (second circle))
             (circle-radius (first circle))
@@ -238,8 +238,10 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
 
         (format t "circle: ~A~%" circle)
         (format t "Point found: ~A~%" (length suitable-points))
-        ;; eval Hough transform on this points
-;;        (block nested-loops
+        (if (< (length suitable-points) 100) ; remove evident outsiders
+            (remhash circle circles-hash)
+          ;; eval Hough transform on this points
+          ;;        (block nested-loops
           (dolist (p1 suitable-points)
             (when (< 10000 (gethash circle circles-hash))
               (return))
@@ -256,7 +258,7 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
                              (< (abs (- circle-radius (first circle-params))) max-radius-error))
                     ;; check center!
 
-                    (incf (gethash circle circles-hash)))))))))
+                    (incf (gethash circle circles-hash))))))))))
 
     (format t "circles: ~A~%"      (hash-table-count circles-hash))
     (print-hash circles-hash)
