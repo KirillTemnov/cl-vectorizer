@@ -34,19 +34,6 @@
     ((< (first p1) (first p2)) (list p1 p2 (get-points-distance p1 p2)))
     (t (list p2 p1 (get-points-distance p1 p2)))))
 
-(defun get-line-length (line)
-  "Returns length of 2D line.
-   Example:
-   line = '((3 3) (11 4) length)
-   will return 8.062258"
-  (let* ((x1 (caar line))
-         (y1 (cadar line))
-         (x2 (caadr line))
-         (y2 (cadadr line))
-         (dx (- x2 x1))
-         (dy (- y2 y1)))
-    (sqrt (+ (* dx dx)  (* dy dy)))))
-
 (defun get-tilt-angle (line)
   "Returns tilt angle between line and horizont. Result return in degrees."
   (let* ((p1 (first line))
@@ -242,21 +229,31 @@
   "Returns T if lines can be merged and nil otherwise."
   (let ((angle1 (get-tilt-angle line1))
         (angle2 (get-tilt-angle line2)))
-    (cond
-      ((or
-        (< (third line1) +min-line-len+)
-        (< (third line2) +min-line-len+))
-       t)
-
-      ((and
+    (if
+      (and
+        (< (abs (- angle1 angle2)) (get-max-slope-angle))
         (or
-         (> (third line2) +max-line-len+)
-         (> (third line1) +max-line-len+))
-        (>= 0.5 (abs (- angle1 angle2))))
-       t)
+         (< (get-max-length-to-restore) (get-points-distance (first line1) (first line2)))
+         (< (get-max-length-to-restore) (get-points-distance (second line1) (first line2)))))
+        t
+        nil)))
 
-      ((>= (get-max-slope-angle) (abs (- angle1 angle2))) t)
-      (t nil))))
+
+    ;; (cond
+    ;;   ((or
+    ;;     (< (third line1) +min-line-len+)
+    ;;     (< (third line2) +min-line-len+))
+    ;;    t)
+
+    ;;   ((and
+    ;;     (or
+    ;;      (> (third line2) +max-line-len+)
+    ;;      (> (third line1) +max-line-len+))
+    ;;     (>= 0.5 (abs (- angle1 angle2))))
+    ;;    t)
+
+    ;;   ((>= (get-max-slope-angle) (abs (- angle1 angle2))) t)
+    ;;   (t nil))))
 
 
 
@@ -282,46 +279,66 @@
                                 (push (list i j) points-list))))))
              points-list)))
     (let ((new-lines-hash (make-hash-table :test 'equal ))
-          (total-merged 0)
+          (total-merged 10)
           points-list
           cur-line
           key-line)
       ;; (when (get-debug-mode)
       ;;  (format t "Merge near lines ...~%~%"))
 
-      (loop for point being the hash-key of line-hash do
-           (setf key-line (gethash point line-hash))
-           (setf points-list (get-points key-line))
-           (dolist (pt points-list)
-             (setf cur-line (gethash pt line-hash nil))
-             (when (and
-                    (not (eq nil cur-line))
-                    (not (equal key-line cur-line))
-                    (can-merge? key-line cur-line))
-               ;; (when (get-debug-mode)
-               ;;   (format t "merge lines: ~%Line1 = ~a~%Line2 = ~a~%~%"
-               ;;    (get-line-string key-line)
-               ;;    (get-line-string cur-line)))
+      ;; (loop while (< 1 total-merged) do
+      ;;      (format t "total merged: ~A~%" total-merged)
+      ;;      (setf total-merged 0)
+           (loop for point being the hash-key of line-hash do
+                (setf key-line (gethash point line-hash))
+                (setf points-list (get-points key-line))
+                (dolist (pt points-list)
+                  (setf cur-line (gethash pt line-hash nil))
+                  (when (and
+                         (not (eq nil cur-line))
+                         (not (equal key-line cur-line))
+                         (can-merge? key-line cur-line))
+                    ;; (when (get-debug-mode)
+                    ;;   (format t "merge lines: ~%Line1 = ~a~%Line2 = ~a~%~%"
+                    ;;    (get-line-string key-line)
+                    ;;    (get-line-string cur-line)))
 
-               (remhash point line-hash)
-               (remhash (second key-line) line-hash)
-               (remhash pt line-hash)
-               (remhash (second cur-line) line-hash)
-               (setf key-line (merge-two-lines key-line cur-line))
-               (incf total-merged)
-               (return)))  ; get next point from hash-key
+                    (remhash point line-hash)
+                    (remhash (second key-line) line-hash)
+                    (remhash pt line-hash)
+                    (remhash (second cur-line) line-hash)
+                    (setf key-line (merge-two-lines key-line cur-line))
+                    (incf total-merged)
+                    (return)))  ; get next point from hash-key
 
-           (setf (gethash (first key-line) new-lines-hash) key-line)
-           (setf (gethash (second key-line) new-lines-hash) key-line))
+                (setf (gethash (first key-line) new-lines-hash) key-line)
+                (setf (gethash (second key-line) new-lines-hash) key-line))
+           ;; (setf line-hash new-lines-hash)
+           ;; (setf new-lines-hash (make-hash-table :test 'equal )))
 
-      ;; (setf (gethash (first key-line) line-hash) key-line)
-      ;; (setf (gethash (second key-line) line-hash) key-line))
+           ;; search long lines and then
+           ;; search small lines near them (on same line)
+           (loop for point being the hash-key of line-hash
+                using (hash-value line) do
+                (when (< (get-max-small-line-length) (third line))
+                  (let ((angle (get-tilt-angle line) angle1 angle2 angle3)
+                        (dolist (point (generate-near-points (first line)
+                                                             (get-max-length-to-restore)))
+                          (let ((line2 (gethash point line-hash)))
+                            (when (and
+                                   (line? line2)
+
+                                   (center-point line2)
+
 
       ;; (when (get-debug-mode)
       ;;  (format t "Total ~a lines merged~%" (* 2 total-merged))
       ;;  (format t "Prev length: ~a new length: ~a ~%" (hash-table-count new-lines-hash) (hash-table-count line-hash))
       ;;  )
-      new-lines-hash)))
+
+;;      new-lines-hash)))
+      line-hash)))
+
 ;; (if (=  (hash-table-count new-lines-hash) (hash-table-count line-hash))
 ;;    new-lines-hash
 ;;    (merge-near-lines new-lines-hash :radius radius)))))

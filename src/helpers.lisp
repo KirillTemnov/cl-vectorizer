@@ -289,6 +289,13 @@ Example:
   (dolist (i list)
     (remhash i hash)))
 
+(defun get-line-length (line)
+  "Returns length of 2D line.
+   Example:
+   line = '((3 3) (11 4) length)
+   will return 8.062258"
+  (get-points-distance (first line) (second line)))
+
 (defun center-point (line)
   "Calculates center point of line (section).
 Example:
@@ -386,6 +393,53 @@ Example:
                (setf max-value (aref vector i))))
         max-value)
       nil))
+
+(defun generate-near-points (point distance)
+  (let ((x (first point))
+        (y (second point))
+        points)
+    (loop for x from (- x distance) to (+ x distance) do
+         (loop for y from (- y distance) to (+ y distance) do
+              (push (list x y) points)))
+    points))
+
+(defun hashtable-lines-to-svg-manager (ht manager &key
+                                       (short-lines-color "blue")
+                                       (long-lines-color "green"))
+  "Save lines from hash keys to svg manager."
+  (let (line color (lines 0) (short-lines 0))
+    (loop for point being the hash-key of ht do
+	 (setf line (gethash point ht))
+	 (when (line? line)
+	   (incf lines)
+           (if (< (get-line-length line) (get-max-small-line-length))
+               (progn
+                 (setf color short-lines-color)
+                 (incf short-lines))
+               (setf color long-lines-color))
+	   (add-entity manager (make-svg-line line :color color))))
+
+;;    (when (get-debug-mode)
+    (format t "Total ~A lines pushed to svg manager (~A short lines).~%" lines short-lines)
+    manager))
+
+(defun hashtable-circles-to-svg-manager (circles manager)
+  "Save circles from hash keys to svg manager."
+  (loop for circle being the hash-key of circles do
+       (add-entity manager (make-svg-circle circle :color "blue" :width 2)))
+  (when (get-debug-mode)
+    (format t "Total ~a circles pushed to svg manager.~%" (hash-table-count circles)))
+  manager)
+
+(defun list-points-to-svg-manager (points-list manager)
+  "Save points from list to svg manager."
+  (dolist (pt points-list)
+    (when (and  (listp pt) (= 2 (length pt)))
+      (add-entity manager (make-svg-point pt :color "magenta"))))
+  (when (get-debug-mode)
+    (format nil "Total ~a points pushed to svg manager.~%" (length points-list)))
+  manager)
+
 
 (defun draw-grid (manager grid-size width height &key (color "black") (offset-x 1) (offset-y 1))
   "Create grid on managed canvas with GRID-SIZE on square from '(0 0) to (WIDTH HEIGHT)."

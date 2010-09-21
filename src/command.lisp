@@ -97,7 +97,7 @@ TODO Add default values.
 			    (list (namestring (get-out-path dest-filename))))))
 
 (defun dumb-convert (from-path to-path)
-  ""
+  "Convert image from one format to another."
   (run-command (get-convert-path) :arguments (list (namestring from-path) (namestring to-path))))
 
 (defun resize-to-200-dpi (image-name &key (dest-filename) )
@@ -149,8 +149,8 @@ TODO Add default values.
     (when (get-debug-mode) (format t "export to svg ... ~%"))
     (remove-hash-lines-duplicates lines-ht)
 
-
-    (setf manager (hashtable-lines-to-svg-manager lines-ht manager))
+    (setf manager (hashtable-lines-to-svg-manager lines-ht manager
+                                                  :short-lines-color "magenta"))
 
     (flush-manager manager #p"out.svg")
 

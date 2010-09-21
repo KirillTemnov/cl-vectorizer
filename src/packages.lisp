@@ -136,6 +136,10 @@
 
 (setf (getf *settings* :max-noise-line-length) 3)
 
+(setf (getf *settings* :max-length-to-restore) 4)
+
+(setf (getf *settings* :max-small-line-length) 10)
+
 (setf (getf *settings* :max-circle-diameter) 10)
 
 (setf (getf *settings* :min-histogram-value-of-circle-center) 30)
@@ -227,6 +231,14 @@ abc
 (property max-noise-line-length
 	  :set-docstring "Set maximal length of noise lines."
 	  :get-docstring "Get maximal length of noise lines.")
+
+(property max-small-line-length
+          :set-docstring "Set maximum length for short lines."
+          :get-docstring "Get maximum length for short lines.")
+
+(property max-length-to-restore
+          :set-docstring "Set maximum length that can be added to line (from one side), during it restore."
+          :get-docstring "Get maximum length that can be added to line (from one side), during it restore.") 
 
 (property max-circle-diameter
 	  :set-docstring "Set maximum diameter for circles, that will be searched by Hough algorithm."

@@ -163,37 +163,6 @@ Format:
 		   (namestring (get-out-path filename)))))
 
 ;;--------------------------------------------------------------------------------
-(defun hashtable-lines-to-svg-manager (ht manager)
-  "Save lines from hash keys to svg manager."
-  (let (line (lines 0))
-
-    (loop for point being the hash-key of ht do
-	 (setf line (gethash point ht))
-	 (when (line? line)
-	   (incf lines)
-	   (add-entity manager (make-svg-line line :color "green"))))
-
-    (when (get-debug-mode)
-      (format t "Total ~a lines pushed to svg manager.~%" lines))
-    manager))
-
-(defun hashtable-circles-to-svg-manager (circles manager)
-  "Save circles from hash keys to svg manager."
-  (loop for circle being the hash-key of circles do
-       (add-entity manager (make-svg-circle circle :color "blue" :width 2)))
-  (when (get-debug-mode)
-    (format t "Total ~a circles pushed to svg manager.~%" (hash-table-count circles)))
-  manager)
-
-(defun list-points-to-svg-manager (points-list manager)
-  "Save points from list to svg manager."
-  (dolist (pt points-list)
-    (when (and  (listp pt) (= 2 (length pt)))
-      (add-entity manager (make-svg-point pt :color "magenta"))))
-  (when (get-debug-mode)
-    (format nil "Total ~a points pushed to svg manager.~%" (length points-list)))
-  manager)
-
 ;; Remove
 ;; (defun save-svg (manager &key (filename #p"out.svg"))
 ;;   "Save manager to svg file."
