@@ -316,19 +316,20 @@
            ;; (setf line-hash new-lines-hash)
            ;; (setf new-lines-hash (make-hash-table :test 'equal )))
 
+           ;; todo write code here
            ;; search long lines and then
            ;; search small lines near them (on same line)
-           (loop for point being the hash-key of line-hash
-                using (hash-value line) do
-                (when (< (get-max-small-line-length) (third line))
-                  (let ((angle (get-tilt-angle line) angle1 angle2 angle3)
-                        (dolist (point (generate-near-points (first line)
-                                                             (get-max-length-to-restore)))
-                          (let ((line2 (gethash point line-hash)))
-                            (when (and
-                                   (line? line2)
+           ;; (loop for point being the hash-key of line-hash
+           ;;      using (hash-value line) do
+           ;;      (when (< (get-max-small-line-length) (third line))
+           ;;        (let ((source-angle (get-tilt-angle line) angle1 angle2 angle3)
+           ;;              (dolist (point (generate-near-points (first line)
+           ;;                                                   (get-max-length-to-restore)))
+           ;;                (let ((line2 (gethash point line-hash)))
+           ;;                  (when (and
+           ;;                         (line? line2)
 
-                                   (center-point line2)
+           ;;                         (center-point line2)
 
 
       ;; (when (get-debug-mode)
@@ -344,4 +345,57 @@
 ;;    (merge-near-lines new-lines-hash :radius radius)))))
 
 
+
+(defun hough-lines-table (points &key (angle-delta 5))
+  "Calculate hough lines table for POINTS from 0 to 180 degrees with step ANGLE-DELTA.
+Return table as a list of lists. First element of nested list is angle, other elements are
+distances between '(0 0) line to corresponding point with angle specified as a first
+element."
+  (let (distance-table)
+    (loop for angle = 0 then (+ angle  (degree-to-rad angle-delta))
+       while (< angle pi) do
+         (push
+          (list (rad-to-degree angle)
+                (mapcar #'(lambda (point)
+                            (+ (* (first point) (cos angle)) (* (second point) (sin angle))))
+                        points))
+          distance-table))
+    distance-table))
+
+(defun points-on-one-line? (points-list &key (distance-delta 2) (angle-delta 5))
+ "Check if POINTS-LIST on one line. DISTANCE-DELTA -- maximum delta between each two
+distances, found by Hough transform. ANGLE-DELTA -- angle step for calculating
+Hough transform.
+Return nil if points not lie on same line,
+otherwise return (t angle max-distance-value) -- for debug purposes.
+
+Examples:
+ (points-on-one-line? '((20 10) (30 12) (10 10)) :distance-delta 1.2)
+ -> (T 94.99999999999994d0 1.1208319687069164d0)
+ (points-on-one-line? '((20 10) (30 13) (10 10)) :distance-delta 1.2)
+ -> nil
+"
+  ;; (get-max-delta '(10 11 11 9 10 11.3))
+  ;; (get-max-delta '(-19 -29 -9))
+  ;; (get-max-delta '(22.118805249290297d0 30.88390212853126d0 13.927284806400378d0))
+  (labels ((get-max-delta (values-list)
+             (let ((minn 0) delta)
+               (loop for i from 0 to (- (length values-list) 2) do
+                    (loop for j from (1+ i) to (- (length values-list) 1) do
+                         (setf delta (abs (- (abs (nth i values-list))
+                                             (abs (nth j values-list)))))
+                         (when (< minn delta)
+                           (setf minn delta))))
+               minn)))
+    (let ((min-delta (* 100 distance-delta)) ; set start min distance delta
+          cur-delta
+          angle)
+      (dolist (points-raw (hough-lines-table points-list :angle-delta angle-delta))
+        (setf cur-delta (get-max-delta (cadr points-raw)))
+        (when (< cur-delta min-delta)
+          (setf min-delta cur-delta)
+          (setf angle (first points-raw))))
+      (if (<= min-delta distance-delta)
+          (list t angle min-delta)
+          nil))))
 
