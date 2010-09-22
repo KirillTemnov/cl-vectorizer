@@ -2,7 +2,7 @@
 (in-package #:cl-vectorizer)
 
 (defun print-hash (hash)
-  "Print hash table keys and values"
+  "Print HASH keys and values."
   (maphash #'(lambda (key value)  (format t "The value associated with the key ~S is ~S~%" key value))
  hash))
 
@@ -21,7 +21,7 @@
 
 
 (defun tokenize (string)
-  "Split string by space to list of srings"
+  "Split STRING by space to list of srings."
   (let ((pos (min (or (position #\Space string) (1- (length string)))
 		  (or (position #\Tab string) (1- (length string))))))
     (cond
@@ -34,7 +34,7 @@
       (t (list (string-trim '(#\Space #\Tab) string))))))
 
 (defun write-to-file (content filename)
-  "Write content to file (filename). Overwrite existing file"
+  "Write CONTENT to file FILENAME. Overwrites existing file."
   (with-open-file (stream  filename
 			   :direction :output
 			   :if-exists :supersede
@@ -43,7 +43,7 @@
   filename)
 
 (defun mapconcat (func elems)
-  "Execute function on each of elems and concatenate all results in a string."
+  "Execute FUNC on each of ELEMS and concatenate all results in a string."
   (cond
     ((eq nil elems) "")
     (t
@@ -68,16 +68,16 @@ sample (\"1\" \"2\" \"3\")  -> (1 2 3)"
   (map 'list #'(lambda (elem)  (parse-integer elem :junk-allowed t)) (tokenize list-string)))
 
 (defun get-in-path (filename)
-  "Concatenate path to IN working dir and filename."
+  "Concatenate path to *WORKING-DIR-IN* working dir and filename."
   (merge-pathnames (getf *settings* :working-dir-in) filename))
 
 (defun get-out-path (filename)
-  "Concatenate path to OUT working dir and filename."
+  "Concatenate path to *WORKING-DIR-OUT* working dir and filename."
   (merge-pathnames (getf *settings* :working-dir-out) filename))
 
 (defun get-out-path-make-dir (filename)
-  "Concatenate path to OUT working dir and filename.
-Creates OUT working directory, if it doen't exist."
+  "Concatenate path to *WORKING-DIR-OUT* working dir and FILENAME.
+Creates *WORKING-DIR-OUT* working directory, if it doen't exist."
   (let ((file-path (merge-pathnames (getf *settings* :working-dir-out) filename)))
     (with-open-file (temp-file
 		     (ensure-directories-exist file-path) :direction :output  :if-exists :supersede))
@@ -101,7 +101,7 @@ Example:
 		 :directory (pathname-directory filename)))
 
 (defun add-to-filename (filename add-symbols)
-  "Add `add-symbols` value to filename
+  "Add ADD-SYMBOLS value to FILENAME
 
 Example:
 > (add-to-filename #p\"/tmp/test.txt\" 5)
