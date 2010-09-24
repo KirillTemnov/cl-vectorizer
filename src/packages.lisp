@@ -13,7 +13,7 @@
 	   #:run-command-return-output
 	   #:convert-image
 	   #:dumb-convert
-	   #:resize-to-200-dpi
+	   #:resize-to-fixed-dpi
 	   #:thin-image-file
 	   #:version
 	   #:set-working-dir-in
@@ -27,7 +27,7 @@
 ;;------------------------------------------------------------------------------
 ;; Formating
 ;;------------------------------------------------------------------------------
-(defvar version "0.2.9" "Package version.")
+(defvar version "0.4.0" "Package version.")
 ;; format sizes
 (defvar +a0+ '(841 1189))
 (defvar +a0-landscape+ '(1189 841))

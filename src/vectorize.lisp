@@ -259,15 +259,13 @@
 
 (defun merge-near-lines (line-hash)
   "Find near lines and merge them. Returns new hash with lines."
-  (flet ((get-points (line)
-           (let* ((p1 (first line))
-                  (p2 (second line))
-                  (x1 (first p1))
-                  (y1 (second p1))
-                  (x2 (first p2))
-                  (y2 (second p2))
-                  (radius (get-line-search-radius))
-                  points-list)
+  (labels ((get-points (line)
+           (let ((x1 (first (first line)))
+                 (y1 (second (first line)))
+                 (x2 (first (second line)))
+                 (y2 (second (second line)))
+                 (radius (get-line-search-radius))
+                 points-list)
              (loop for i from (- x1 radius) to (+ x1 radius) do
                   (loop for j from (- y1 radius) to (+ y1 radius) do
                        (let ((dx (- i x1))
@@ -278,71 +276,41 @@
                                 (>= radius (sqrt (+ (* dx dx) (* dy dy))))
                                 (push (list i j) points-list))))))
              points-list)))
-    (let ((new-lines-hash (make-hash-table :test 'equal ))
+    (let ((new-lines-hash (make-hash-table :test 'equal))
           (total-merged 10)
           points-list
           cur-line
           key-line)
-      ;; (when (get-debug-mode)
-      ;;  (format t "Merge near lines ...~%~%"))
 
-      ;; (loop while (< 1 total-merged) do
-      ;;      (format t "total merged: ~A~%" total-merged)
-      ;;      (setf total-merged 0)
-           (loop for point being the hash-key of line-hash do
-                (setf key-line (gethash point line-hash))
-                (setf points-list (get-points key-line))
-                (dolist (pt points-list)
-                  (setf cur-line (gethash pt line-hash nil))
-                  (when (and
-                         (not (eq nil cur-line))
-                         (not (equal key-line cur-line))
-                         (can-merge? key-line cur-line))
-                    ;; (when (get-debug-mode)
-                    ;;   (format t "merge lines: ~%Line1 = ~a~%Line2 = ~a~%~%"
-                    ;;    (get-line-string key-line)
-                    ;;    (get-line-string cur-line)))
+      (loop for point being the hash-key
+         using (hash-value key-line) of line-hash do
+           (when (<= 3 (third key-line)) ; not regard small lines
+             (setf points-list (get-points key-line))
+             (dolist (pt points-list)
+               (setf cur-line (gethash pt line-hash nil))
+               (when (and
+                      (not (eq nil cur-line))
+                      (not (equal key-line cur-line))
+                      (can-merge? key-line cur-line))
+                 ;; (when (get-debug-mode)
+                 ;;   (format t "merge lines: ~%Line1 = ~a~%Line2 = ~a~%~%"
+                 ;;    (get-line-string key-line)
+                 ;;    (get-line-string cur-line)))
 
-                    (remhash point line-hash)
-                    (remhash (second key-line) line-hash)
-                    (remhash pt line-hash)
-                    (remhash (second cur-line) line-hash)
-                    (setf key-line (merge-two-lines key-line cur-line))
-                    (incf total-merged)
-                    (return)))  ; get next point from hash-key
+                 (remhash point line-hash)
+                 (remhash (second key-line) line-hash)
+                 (remhash pt line-hash)
+                 (remhash (second cur-line) line-hash)
+                 (setf key-line (merge-two-lines key-line cur-line))
+                 (incf total-merged)
+                 (return)))  ; get next point from hash-key
 
-                (setf (gethash (first key-line) new-lines-hash) key-line)
-                (setf (gethash (second key-line) new-lines-hash) key-line))
-           ;; (setf line-hash new-lines-hash)
-           ;; (setf new-lines-hash (make-hash-table :test 'equal )))
+             (setf (gethash (first key-line) new-lines-hash) key-line)
+             (setf (gethash (second key-line) new-lines-hash) key-line)))
 
-           ;; todo write code here
-           ;; search long lines and then
-           ;; search small lines near them (on same line)
-           ;; (loop for point being the hash-key of line-hash
-           ;;      using (hash-value line) do
-           ;;      (when (< (get-max-small-line-length) (third line))
-           ;;        (let ((source-angle (get-tilt-angle line) angle1 angle2 angle3)
-           ;;              (dolist (point (generate-near-points (first line)
-           ;;                                                   (get-max-length-to-restore)))
-           ;;                (let ((line2 (gethash point line-hash)))
-           ;;                  (when (and
-           ;;                         (line? line2)
-
-           ;;                         (center-point line2)
-
-
-      ;; (when (get-debug-mode)
-      ;;  (format t "Total ~a lines merged~%" (* 2 total-merged))
-      ;;  (format t "Prev length: ~a new length: ~a ~%" (hash-table-count new-lines-hash) (hash-table-count line-hash))
-      ;;  )
-
-;;      new-lines-hash)))
-      line-hash)))
-
-;; (if (=  (hash-table-count new-lines-hash) (hash-table-count line-hash))
-;;    new-lines-hash
-;;    (merge-near-lines new-lines-hash :radius radius)))))
+;;      (merge-lines new-lines-hash)
+      new-lines-hash)))
+;;      line-hash)))
 
 
 
@@ -362,7 +330,65 @@ element."
           distance-table))
     distance-table))
 
-(defun points-on-one-line? (points-list &key (distance-delta 2) (angle-delta 5))
+
+(defun merge-lines (lines-hash)
+  "Merge near lines, that belongs to same straight line and not far from each other."
+  (let (lines-for-merging)
+    (loop for point being the hash-key of lines-hash
+       using (hash-value line) do
+         (when (and
+                (< (get-max-small-line-length) (third line))
+                (not (member line lines-for-merging :test #'equal)))
+           (let ((bbox (line-bounding-box line :margin (min 100 (third line))))
+                 (lines-list (list line)))
+             ;; take all lines placed in bbox and put them to lines-list
+             ;;                    (format t "Line: ~A Bbox : ~A~%" line bbox)
+             (loop for anything being the hash-key
+                using (hash-value some-line) of lines-hash do
+                  (when (inside-box? some-line bbox)
+                    ;; (format t "Line ~A inside box~%" some-line)
+                    (unless (member some-line lines-list :test #'equal)
+                      (push some-line lines-list))))
+             (setf lines-list (reverse lines-list))
+             (format t "Line: ~A~%BBox: ~A~%Filtered lines: ~A~%~%~%"
+                     line bbox lines-list)
+             (pop lines-list)    ; extract source line
+             (dolist (test-line lines-list)
+               (format t "Line = ~A test-line = ~A~%" line test-line)
+               (when
+                   (and
+                    (or             ; center and one end point of TEST-LINE lie on same
+                     (points-on-one-line? ; straight line as LINE.
+                      (list (first line) (second line)
+                            (first test-line)
+                            (center-point test-line)))
+                     (points-on-one-line?
+                      (list (first line) (second line)
+                            (second test-line)
+                            (center-point test-line))))
+                    ;; distance between lines is ont too long.
+                    (<= (min-distance line test-line)) 3) ; todo move 3 to setting!
+
+                 (unless (member line lines-for-merging :test #'equal)
+                   (remhash (first line) lines-hash)
+                   (remhash (second line) lines-hash)
+                   (push line lines-for-merging))
+
+                 (unless (member test-line lines-for-merging :test #'equal)
+                   ;; move thit to procedure
+                   (remhash (first test-line) lines-hash)
+                   (remhash (second test-line) lines-hash)
+                   (let ((new-line
+                          (make-line-longer
+                           (first line)
+                           (second line)
+                           (get-points-distance (second line) (first test-line)))))
+                     (setf (gethash (first new-line) lines-hash) new-line)
+                     (setf (gethash (second new-line) lines-hash) new-line))
+                   (push test-line lines-for-merging)
+                   (format t "Lines ~A and ~A on same line~%" line test-line)))))))))
+
+(defun points-on-one-line? (points-list &key (distance-delta 1.2) (angle-delta 5))
  "Check if POINTS-LIST on one line. DISTANCE-DELTA -- maximum delta between each two
 distances, found by Hough transform. ANGLE-DELTA -- angle step for calculating
 Hough transform.
@@ -398,4 +424,65 @@ Examples:
       (if (<= min-delta distance-delta)
           (list t angle min-delta)
           nil))))
+
+(defun line-bounding-box (line &key (margin 20))
+  "Get bounding box of LINE with MARGINS on all of sides.
+Example:
+ (line-bounding-box '((10 5) (30 10)) :margin 2)
+ -> ((8 3) (32 12))
+"
+  (let ((x1 (first (first line)))
+        (y1 (second (first line)))
+        (x2 (first (second line)))
+        (y2 (second (second line))))
+    (list
+     (list (- (min x1 x2) margin)
+           (- (min y1 y2) margin))
+     (list (+ margin (max x1 x2))
+           (+ margin (max y1 y2))))))
+
+
+(defun inside-box? (line bounding-box)
+  "Test if all line points inside bounding-box.
+Example:
+ (inside-box? '((10 5) (30 12)) '((8 3) (32 12)))
+ -> T"
+  (labels ((point-inside-box? (point bounding-box)
+             (let ((x1 (first (first bounding-box)))
+                   (y1 (second (first bounding-box)))
+                   (x2 (first (second bounding-box)))
+                   (y2 (second (second bounding-box))))
+               (and
+                (<= x1 (first point) x2)
+                (<= y1 (second point) y2)))))
+    (and
+     (point-inside-box? (first line) bounding-box)
+     (point-inside-box? (second line) bounding-box))))
+
+
+(defun make-line-longer (pt1 pt2 length)
+  "Make line longer.
+
+      x2 + gamma * x2 - x1
+ x = -----------------------
+            gamma
+
+      y2 + gamma * y2 - y1
+ y = -----------------------
+            gamma
+"
+  (let* ((x1 (first pt1))
+         (y1 (second pt1))
+         (x2 (first pt2))
+         (y2 (second pt2))
+         (gamma (/  (get-points-distance pt1 pt2) length) )
+         (pt3 (list
+               (round (/ (- (+ x2 (* gamma x2)) x1) gamma))
+               (round (/ (- (+ y2 (* gamma y2)) y1) gamma)))))
+
+    (list pt1 pt3 (get-points-distance pt1 pt3))))
+
+;; (make-line-longer '(19 20) '(20 43) 5)
+
+;; (+ (get-points-distance  '(2 6) '(17 6) ) 8)
 

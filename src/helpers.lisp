@@ -306,6 +306,15 @@ Example:
     (list (round (/ (+ (first p1) (first p2)) 2))
 	  (round (/ (+ (second p1) (second p2)) 2)))))
 
+(defun min-distance (line1 line2)
+  "Get minimum distance from one of end points of LINE1 to
+ end point of line LINE2."
+  (let ((p1 (first line1))
+        (p2 (second line1))
+        (p3 (first line2))
+        (p4 (second line2)))
+    (min (get-points-distance p1 p3) (get-points-distance p1 p4)
+         (get-points-distance p2 p3) (get-points-distance p2 p4))))
 
 (defun hashlines-to-hashpoints (hash-lines)
   "Extract points from `hash-lines` and return its as hashtable with points as keys."
@@ -403,13 +412,39 @@ Example:
               (push (list x y) points)))
     points))
 
+
+(defun filter-hash (hash predicate)
+  "Filter HASH values and return new hash, with values, satisfied to PREDICATE."
+  (let ((ht (make-hash-table :test #'equal)))
+    (maphash #'(lambda (key value)
+                 (when (funcall predicate value)
+                   (setf (gethash key ht) value)))
+             hash)
+    ht))
+
+(defun inverse-y (point)
+  "Inverse y value of a POINT."
+  (list (first point) (- (second point))))
+
+;; todo merge dxf and svg managers
+(defun hashtable-lines-to-dxf-manager (ht manager)
+  "Save lines from hash keys to dxf manager"
+  (loop for point being the hash-key of ht
+       using (hash-value line)  do
+       (when (line? line)
+         (sb-dxf:add-object manager (make-instance 'sb-dxf:dxf-line
+                                            :start-point (inverse-y (first line))
+                                            :end-point (inverse-y (second line))))))
+  manager)
+
+
 (defun hashtable-lines-to-svg-manager (ht manager &key
                                        (short-lines-color "blue")
                                        (long-lines-color "green"))
   "Save lines from hash keys to svg manager."
   (let (line color (lines 0) (short-lines 0))
-    (loop for point being the hash-key of ht do
-	 (setf line (gethash point ht))
+    (loop for point being the hash-key of ht
+       using (hash-value line) do
 	 (when (line? line)
 	   (incf lines)
            (if (< (get-line-length line) (get-max-small-line-length))

@@ -330,7 +330,7 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
 (defun make-qt (infile &key (outfile (change-extension infile "png")))
   "Make a quadtree of image (INFILE) and save it to OUTFILE."
   (declare (ignore outfile))
-  (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
+  (let* ((image-path (resize-to-fixed-dpi infile :dest-filename (get-temp-png-file)))
          (image (load-image image-path))
          (tree (make-instance 'qtree :size (max (png:image-width image)  (png:image-height image)))))
     (fill-tree tree (image-to-hashtable image))

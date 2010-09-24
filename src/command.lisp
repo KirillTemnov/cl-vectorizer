@@ -100,7 +100,7 @@ TODO Add default values.
   "Convert image from one format to another."
   (run-command (get-convert-path) :arguments (list (namestring from-path) (namestring to-path))))
 
-(defun resize-to-200-dpi (image-name &key (dest-filename) )
+(defun resize-to-fixed-dpi (image-name &key (dest-filename)  (final-dpi +min-dpi+))
   (let* ((info (get-image-info (namestring (get-in-path image-name))))
 	 (x-dpi (getf info :xresolution))
 	 (y-dpi (getf info :yresolution))
@@ -111,10 +111,10 @@ TODO Add default values.
 	   (not (eq nil x-dpi))		; image will not be resized
 	   (not	(eq nil y-dpi))
 	   (and
-	    (> x-dpi +min-dpi+ )
-	    (> y-dpi +min-dpi+)))
-	(setf w (round (/ w (/ x-dpi +min-dpi+))))
-	(setf h (round (/ h (/ x-dpi +min-dpi+))))
+	    (> x-dpi final-dpi )
+	    (> y-dpi final-dpi)))
+	(setf w (round (/ w (/ x-dpi final-dpi))))
+	(setf h (round (/ h (/ x-dpi final-dpi))))
 	  )
     (convert-image image-name
 		   :dest-filename save-filename
@@ -127,12 +127,14 @@ TODO Add default values.
 
 (defun thin-image-file (infile &key (outfile (change-extension infile "png")))
   "Thin image in one file and save to another."
-  (let* ((image-path (resize-to-200-dpi infile :dest-filename (get-temp-png-file)))
+  (let* ((image-path (resize-to-fixed-dpi infile :dest-filename (get-temp-png-file) :final-dpi 150))
 	 (image (load-image image-path))
          (w (png:image-width image))
          (h (png:image-height image))
 	 (ht (thin-image-hash (image-to-hashtable image)))
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
+         (dxf-manager (sb-dxf:create-manager :filename (change-extension infile "dxf")))
+         hash-4-circles
 	 lines-ht)
 
     (when (get-debug-mode) (format t "format image ~a ... ~%"  (get-out-path outfile)))
@@ -153,6 +155,14 @@ TODO Add default values.
                                                   :short-lines-color "magenta"))
 
     (flush-manager manager #p"out.svg")
+
+
+    (setf hash-4-circles (filter-hash lines-ht #'(lambda (line) (< (third line) 10))))
+    (hashtable-lines-to-dxf-manager hash-4-circles dxf-manager)
+
+    (format t "Points for circles: ~A~%" (hash-table-count  hash-4-circles))
+    (sb-dxf:flush-manager dxf-manager)
+;;    (format t "Poccibly circles: ~A~%" (find-circles2 hash-4-circles 600 20))
 
     lines-ht))
 
