@@ -308,7 +308,7 @@
              (setf (gethash (first key-line) new-lines-hash) key-line)
              (setf (gethash (second key-line) new-lines-hash) key-line)))
 
-;;      (merge-lines new-lines-hash)
+      (merge-lines new-lines-hash)
       new-lines-hash)))
 ;;      line-hash)))
 
@@ -342,7 +342,6 @@ element."
            (let ((bbox (line-bounding-box line :margin (min 100 (third line))))
                  (lines-list (list line)))
              ;; take all lines placed in bbox and put them to lines-list
-             ;;                    (format t "Line: ~A Bbox : ~A~%" line bbox)
              (loop for anything being the hash-key
                 using (hash-value some-line) of lines-hash do
                   (when (inside-box? some-line bbox)
@@ -350,11 +349,10 @@ element."
                     (unless (member some-line lines-list :test #'equal)
                       (push some-line lines-list))))
              (setf lines-list (reverse lines-list))
-             (format t "Line: ~A~%BBox: ~A~%Filtered lines: ~A~%~%~%"
-                     line bbox lines-list)
+
              (pop lines-list)    ; extract source line
              (dolist (test-line lines-list)
-               (format t "Line = ~A test-line = ~A~%" line test-line)
+               (format t "Test-line = ~A~%" line test-line)
                (when
                    (and
                     (or             ; center and one end point of TEST-LINE lie on same
@@ -375,7 +373,7 @@ element."
                    (push line lines-for-merging))
 
                  (unless (member test-line lines-for-merging :test #'equal)
-                   ;; move thit to procedure
+                   ;; move this to procedure
                    (remhash (first test-line) lines-hash)
                    (remhash (second test-line) lines-hash)
                    (let ((new-line
@@ -471,16 +469,17 @@ Example:
  y = -----------------------
             gamma
 "
-  (let* ((x1 (first pt1))
-         (y1 (second pt1))
-         (x2 (first pt2))
-         (y2 (second pt2))
-         (gamma (/  (get-points-distance pt1 pt2) length) )
-         (pt3 (list
-               (round (/ (- (+ x2 (* gamma x2)) x1) gamma))
-               (round (/ (- (+ y2 (* gamma y2)) y1) gamma)))))
-
-    (list pt1 pt3 (get-points-distance pt1 pt3))))
+  (if (< 0 length)
+      (let* ((x1 (first pt1))
+             (y1 (second pt1))
+             (x2 (first pt2))
+             (y2 (second pt2))
+             (gamma (/  (get-points-distance pt1 pt2) length) )
+             (pt3 (list
+                   (round (/ (- (+ x2 (* gamma x2)) x1) gamma))
+                   (round (/ (- (+ y2 (* gamma y2)) y1) gamma)))))
+        (list pt1 pt3 (get-points-distance pt1 pt3)))
+      (list pt1 pt2 (get-points-distance pt1 pt2))))
 
 ;; (make-line-longer '(19 20) '(20 43) 5)
 
