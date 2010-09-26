@@ -27,12 +27,37 @@
    line is a list:  '((x1 y1) (x2 y2) length)"
   (format nil "#Line {~a} ~%" line))
 
+(defun <point (p1 p2)
+  "Points comparsing function. Returns T if x of P1 is less than x of P2,
+or if x'es of P1 and P2 are equal, but y of P1 is less than y of P2."
+  (or
+   (< (first p1) (first p2))
+   (and
+    (= (first p1) (first p2))
+    (< (second p1) (second p2)))))
+
+(defun <line (line1 line2)
+  "Lines comparsing function. Returns T if first point of LINE1 is
+less, than first point of LINE2. If first points are equal, function compare second points."
+  (or
+   (<point (first line1) (first line2))
+   (and
+    (equal (first line1) (first line2))
+    (<point (second line1) (second line2)))))
+
 (defun make-line (p1 p2)
   "Create line which starts from left (0) to right (infinity)"
   (cond
     ;;    ((> 2 (get-points-distance p1 p2)) nil)
-    ((< (first p1) (first p2)) (list p1 p2 (get-points-distance p1 p2)))
+    ((<point p1 p2) (list p1 p2 (get-points-distance p1 p2)))
     (t (list p2 p1 (get-points-distance p1 p2)))))
+
+(defun get-lines-min-distance (line1 line2)
+  "Get minimum distance between LINE1 and LINE2 end points."
+  (min (get-points-distance (first line1) (first line2))
+       (get-points-distance (second line1) (first line2))
+       (get-points-distance (first line1) (second line2))
+       (get-points-distance (second line1) (second line2))))
 
 (defun get-tilt-angle (line)
   "Returns tilt angle between line and horizont. Result return in degrees."
@@ -61,45 +86,62 @@
     (t
      (< (first x) (first y)))))
 
-;; (merge-two-lines '((212 96) (213 95) 1.4142135) '((213 100) (213 99) 1.0))
-;; (let ((line1 '((212 96) (213 95) 1.4142135))
-;;       (line2 '((213 100) (213 99) 1.0)))
-;;   (sort (list (first line2) (second line2)) #'compare-points))
-;;   (sort (list (first line1) (second line1)) (first line2) (second line2)) #'compare-points))
+
+(defun one-line-lies-on-the-other (line1 line2 &key (permissible-error 1))
+  "Compares two lines, and if one of them lay on the other, return line,
+that bigger, otherwise return nil."
+  (labels ((line2-lie-on-line1 (line1 line2 p-err)
+             (let* ((p1 (first line1))
+                    (p2 (second line1))
+                    (p3 (first line2))
+                    (p4 (second line2)))
+               (and
+                (<= (- (first p1) p-err) (first p3) (first p4) (+ (first p2) p-err))
+                (<= (- (min (second p1) (second p2)) p-err)
+                    (min (second p3) (second p4))
+                    (max (second p3) (second p4))
+                    (+ (max (second p1) (second p2)) p-err))))))
+    (cond
+      ((line2-lie-on-line1 line1 line2 permissible-error) line1)
+      ((line2-lie-on-line1 line2 line1 permissible-error) line2)
+      (t nil))))
+
 
 (defun merge-two-lines (line1 line2)
   "Merge 2 lines. Compare 4 distances between points."
-  (let* ((p1 (first line1))
-         (p2 (second line1))
-         (p3 (first line2))
-         (p4 (second line2))
-         (d1 (get-points-distance p1 p3))
-         (d2 (get-points-distance p1 p4))
-         (d3 (get-points-distance p2 p3))
-         (d4 (get-points-distance p2 p4))
-         (sorted-distances
-          (sort (list (list p1 p3 d1) (list p1 p4 d2) (list p2 p3 d3) (list p2 p4 d4))
-                #'(lambda (elem1 elem2) (> (third elem1) (third elem2))))))
-    (make-line (first (first sorted-distances)) (second (first sorted-distances)))))
-
-
-;; ;;    (format t "Sorted distances:~%~a" sorted-distances)))
-
-
-;; (defun merge-two-lines (line1 line2)
-;;   "Merge two lines in one."
-;;   (let*
-;;       ((points (sort (list (first line1) (second line1) (first line2) (second line2)) #'compare-points))
-;;        (start (first points))
-;;        (end (fourth points))
-;;       (result (make-line start end)))
-;;     result))
-
-;; (when (get-debug-mode)
-;;   (when  (< (third result) (+ (third line1) (third line2)))
-;;  (format t "Merge lines ~a and ~a" (get-line-string line1) (get-line-string line2))
-;;  (format t "Result: ~a~%" result)))
-;; result))
+  (let ((source-line (one-line-lies-on-the-other line1 line2)))
+    (if source-line
+        source-line
+        (let ((angle1 (get-tilt-angle line1))
+              (angle2 (get-tilt-angle line2))
+              (p1 (first line1))
+              (p2 (second line1))
+              (p3 (first line2))
+              (p4 (second line2)))
+          ;; (when (< (third line1) (third line2))
+          ;;   (psetf line1 line2 line2 line1))
+          (cond
+            ((< (abs (- angle1 angle2)) 2) ; angle between lines < 2 degrees, just merge them
+             (format t "ML: almost parallel~%"  )
+             (let* ((d1 (get-points-distance p1 p3))
+                    (d2 (get-points-distance p1 p4))
+                    (d3 (get-points-distance p2 p3))
+                    (d4 (get-points-distance p2 p4))
+                    (sorted-distances
+                     (sort (list (list p1 p3 d1) (list p1 p4 d2)
+                                 (list p2 p3 d3) (list p2 p4 d4))
+                           #'(lambda (elem1 elem2) (> (third elem1) (third elem2))))))
+               (make-line (first (first sorted-distances)) (second (first sorted-distances)))))
+            ;; else, make one of lines longer
+            ;; todo work on this code
+            ((<line line1 line2)
+             (format t "ML: ~A < ~A~%" line1 line2)
+             (make-line-longer p1 p2
+                               (+ (get-lines-min-distance line1 line2) (third line1))))
+            (t
+             (format t "ML: ~A <= ~A~%" line2 line1)
+             (make-line-longer p2 p1
+                               (+ (get-lines-min-distance line1 line2) (third line2)))))))))
 
 (defun substitute-angles (an1 an2)
   "Return absolute difference between two angles in degrees."
@@ -117,18 +159,6 @@
        (> 0.5 (substitute-angles tilt-angle new-tilt)))
       (t
        (> (get-max-angle-on-line) (substitute-angles tilt-angle new-tilt)))))) ; 15 degrees
-
-;; Что нужно сделать?
-;; 1) Получить первую точку из массива точек у которой будет 1 сосед.
-;;    Это будет начало новой линии. Удалить точку из хеша.
-;; 2) Найти соседнюю точку и получить направление.
-;;    Направление не может меняться более чем на 90 грудусов.
-;;    Удалить точку из хеша.
-;; 3) Если у соседней точки нет соседей или направление сильно меняется - добавить новую линию,
-;;    иначе перейти к п 2)
-;; Закончить когда больше не останется точек
-
-;;tip: (member elem list :test #'equal)
 
 (defun find-end-of-line (point hash-points &key (line nil) (tilt-angle nil))
   "Search and of line. Store current line in `line`."
@@ -239,24 +269,6 @@
         nil)))
 
 
-    ;; (cond
-    ;;   ((or
-    ;;     (< (third line1) +min-line-len+)
-    ;;     (< (third line2) +min-line-len+))
-    ;;    t)
-
-    ;;   ((and
-    ;;     (or
-    ;;      (> (third line2) +max-line-len+)
-    ;;      (> (third line1) +max-line-len+))
-    ;;     (>= 0.5 (abs (- angle1 angle2))))
-    ;;    t)
-
-    ;;   ((>= (get-max-slope-angle) (abs (- angle1 angle2))) t)
-    ;;   (t nil))))
-
-
-
 (defun merge-near-lines (line-hash)
   "Find near lines and merge them. Returns new hash with lines."
   (labels ((get-points (line)
@@ -279,8 +291,7 @@
     (let ((new-lines-hash (make-hash-table :test 'equal))
           (total-merged 10)
           points-list
-          cur-line
-          key-line)
+          cur-line)
 
       (loop for point being the hash-key
          using (hash-value key-line) of line-hash do
@@ -333,7 +344,8 @@ element."
 
 (defun merge-lines (lines-hash)
   "Merge near lines, that belongs to same straight line and not far from each other."
-  (let (lines-for-merging)
+  (let ((total-lines-merged)
+        (lines-for-merging)
     (loop for point being the hash-key of lines-hash
        using (hash-value line) do
          (when (and
@@ -352,7 +364,7 @@ element."
 
              (pop lines-list)    ; extract source line
              (dolist (test-line lines-list)
-               (format t "Test-line = ~A~%" line test-line)
+               (format t "Test-line = ~A~%" test-line)
                (when
                    (and
                     (or             ; center and one end point of TEST-LINE lie on same
@@ -376,15 +388,23 @@ element."
                    ;; move this to procedure
                    (remhash (first test-line) lines-hash)
                    (remhash (second test-line) lines-hash)
+                   (format t "Make line longer. source lines: ~A and ~A ~%" line test-line)
                    (let ((new-line
-                          (make-line-longer
-                           (first line)
-                           (second line)
-                           (get-points-distance (second line) (first test-line)))))
+                          (if (< (third test-line) (third line))
+                              (merge-two-lines line test-line)
+                              (merge-two-lines test-line line))))
+                     (format t "Result line: ~A ~%~%" new-line)
+                     (when (and
+                            (not (one-line-lies-on-the-other line test-line))
+                            (< 10 (abs (- (third new-line)
+                                          (+ (third line)
+                                             (third test-line))))))
+                       (format t "Error: source lines: ~%~A~%~A~%" line test-line)
+                       (format t "Resulting line:~%~A~%~%" new-line))
                      (setf (gethash (first new-line) lines-hash) new-line)
                      (setf (gethash (second new-line) lines-hash) new-line))
                    (push test-line lines-for-merging)
-                   (format t "Lines ~A and ~A on same line~%" line test-line)))))))))
+                   (return)))))))))     ; break from dolist
 
 (defun points-on-one-line? (points-list &key (distance-delta 1.2) (angle-delta 5))
  "Check if POINTS-LIST on one line. DISTANCE-DELTA -- maximum delta between each two
@@ -478,10 +498,9 @@ Example:
              (pt3 (list
                    (round (/ (- (+ x2 (* gamma x2)) x1) gamma))
                    (round (/ (- (+ y2 (* gamma y2)) y1) gamma)))))
-        (list pt1 pt3 (get-points-distance pt1 pt3)))
-      (list pt1 pt2 (get-points-distance pt1 pt2))))
+        (make-line pt1 pt3))
+      (make-line pt1 pt2)))
 
 ;; (make-line-longer '(19 20) '(20 43) 5)
-
 ;; (+ (get-points-distance  '(2 6) '(17 6) ) 8)
 
