@@ -125,7 +125,8 @@ TODO Add default values.
     save-filename))
 
 
-(defun thin-image-file (infile &key (outfile (change-extension infile "png")))
+(defun thin-image-file (infile &key (max-distance 100)
+                        (outfile (change-extension infile "png")))
   "Thin image in one file and save to another."
   (let* ((image-path (resize-to-fixed-dpi infile :dest-filename (get-temp-png-file) :final-dpi 150))
 	 (image (load-image image-path))
@@ -135,7 +136,8 @@ TODO Add default values.
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
          (dxf-manager (sb-dxf:create-manager :filename (change-extension infile "dxf")))
          hash-4-circles
-	 lines-ht)
+	 lines-ht
+         circles-hash)
 
     (when (get-debug-mode) (format t "format image ~a ... ~%"  (get-out-path outfile)))
 
@@ -151,14 +153,21 @@ TODO Add default values.
     (when (get-debug-mode) (format t "export to svg ... ~%"))
     (remove-hash-lines-duplicates lines-ht)
 
+    (format t "Circles: ")
+    (setf hash-4-circles (filter-hash lines-ht #'(lambda (line) (< (third line) 30))))
+    (format t "Total lines for circles: ~A~%" (hash-table-count hash-4-circles))
+    (setf circles-hash (find-circles2 lines-ht max-distance 10))
+    (print-hash circles-hash)
+    (hashtable-circles-to-svg-manager circles-hash manager)
+
     (setf manager (hashtable-lines-to-svg-manager lines-ht manager
                                                   :short-lines-color "magenta"))
 
     (flush-manager manager #p"out.svg")
 
 
-    (setf hash-4-circles (filter-hash lines-ht #'(lambda (line) (< (third line) 10))))
-    (hashtable-lines-to-dxf-manager hash-4-circles dxf-manager)
+
+    (hashtable-lines-to-dxf-manager lines-ht dxf-manager)
 
     (format t "Points for circles: ~A~%" (hash-table-count  hash-4-circles))
     (sb-dxf:flush-manager dxf-manager)

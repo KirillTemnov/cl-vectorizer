@@ -132,20 +132,6 @@
                                     ((< 1000 value) t)
                                     (t nil)))))
 
-(setf (getf *settings* :line-search-radius) 4)
-
-(setf (getf *settings* :max-noise-line-length) 3)
-
-(setf (getf *settings* :max-length-to-restore) 4)
-
-(setf (getf *settings* :max-small-line-length) 10)
-
-(setf (getf *settings* :max-circle-diameter) 10)
-
-(setf (getf *settings* :min-histogram-value-of-circle-center) 30)
-
-(setf (getf *settings* :min-histogram-value-of-circle-edge) 7)
-
 ;; list of radius and max angle between points for this circles
 ;; ((max-radius1 max-angle1) (max-radius2 max-angle2) ... (max-radiusN max-angleN))
 (setf (getf *settings* :angles-step-for-circle)
@@ -238,7 +224,7 @@ abc
 
 (property max-length-to-restore
           :set-docstring "Set maximum length that can be added to line (from one side), during it restore."
-          :get-docstring "Get maximum length that can be added to line (from one side), during it restore.") 
+          :get-docstring "Get maximum length that can be added to line (from one side), during it restore.")
 
 (property max-circle-diameter
 	  :set-docstring "Set maximum diameter for circles, that will be searched by Hough algorithm."
@@ -259,3 +245,25 @@ abc
 (property min-histogram-value-of-circle-edge
           :set-docstring "Set minimum histogram value of circle edge (in persent)."
           :get-docstring "Get minimum histogram value of center edge.")
+
+(property max-distance-between-lines
+          :set-docstring "Set max distance between two lines for merging lines algorithm."
+          :get-docstring "Get max distance between two lines for merging lines algorithm.")
+
+
+
+(set-line-search-radius 4)
+
+(set-max-noise-line-length 3)
+
+(set-max-length-to-restore 4)
+
+(set-max-small-line-length 10)
+
+(set-max-circle-diameter 10)
+
+(set-min-histogram-value-of-circle-center 30)
+
+(set-min-histogram-value-of-circle-edge 7)
+
+(set-max-distance-between-lines 3)

@@ -118,11 +118,9 @@ that bigger, otherwise return nil."
               (p2 (second line1))
               (p3 (first line2))
               (p4 (second line2)))
-          ;; (when (< (third line1) (third line2))
-          ;;   (psetf line1 line2 line2 line1))
           (cond
             ((< (abs (- angle1 angle2)) 2) ; angle between lines < 2 degrees, just merge them
-             (format t "ML: almost parallel~%"  )
+             ;; (format t "ML: almost parallel~%"  )
              (let* ((d1 (get-points-distance p1 p3))
                     (d2 (get-points-distance p1 p4))
                     (d3 (get-points-distance p2 p3))
@@ -135,11 +133,11 @@ that bigger, otherwise return nil."
             ;; else, make one of lines longer
             ;; todo work on this code
             ((<line line1 line2)
-             (format t "ML: ~A < ~A~%" line1 line2)
+             ;; (format t "ML: ~A < ~A~%" line1 line2)
              (make-line-longer p1 p2
-                               (+ (get-lines-min-distance line1 line2) (third line1))))
+                               (+ (get-lines-min-distance line1 line2) (third line2))))
             (t
-             (format t "ML: ~A <= ~A~%" line2 line1)
+             ;; (format t "ML: ~A <= ~A~%" line2 line1)
              (make-line-longer p2 p1
                                (+ (get-lines-min-distance line1 line2) (third line2)))))))))
 
@@ -319,7 +317,8 @@ that bigger, otherwise return nil."
              (setf (gethash (first key-line) new-lines-hash) key-line)
              (setf (gethash (second key-line) new-lines-hash) key-line)))
 
-      (merge-lines new-lines-hash)
+      (loop while (< 0 (merge-lines new-lines-hash)) do
+           (format t "up.~%"  ))
       new-lines-hash)))
 ;;      line-hash)))
 
@@ -341,22 +340,24 @@ element."
           distance-table))
     distance-table))
 
-
 (defun merge-lines (lines-hash)
   "Merge near lines, that belongs to same straight line and not far from each other."
-  (let ((total-lines-merged)
-        (lines-for-merging)
+  (let ((total-lines-merged 0)
+        (max-distance 10)
+        lines-for-merging)
     (loop for point being the hash-key of lines-hash
        using (hash-value line) do
          (when (and
                 (< (get-max-small-line-length) (third line))
                 (not (member line lines-for-merging :test #'equal)))
-           (let ((bbox (line-bounding-box line :margin (min 100 (third line))))
+           (let ((bbox (line-bounding-box line :margin (min max-distance (third line))))
                  (lines-list (list line)))
              ;; take all lines placed in bbox and put them to lines-list
              (loop for anything being the hash-key
                 using (hash-value some-line) of lines-hash do
-                  (when (inside-box? some-line bbox)
+                  (when (and
+                         (inside-box? some-line bbox)
+                         (< (get-lines-min-distance some-line line) max-distance))
                     ;; (format t "Line ~A inside box~%" some-line)
                     (unless (member some-line lines-list :test #'equal)
                       (push some-line lines-list))))
@@ -364,7 +365,7 @@ element."
 
              (pop lines-list)    ; extract source line
              (dolist (test-line lines-list)
-               (format t "Test-line = ~A~%" test-line)
+;;               (format t "Test-line = ~A~%" test-line)
                (when
                    (and
                     (or             ; center and one end point of TEST-LINE lie on same
@@ -376,8 +377,8 @@ element."
                       (list (first line) (second line)
                             (second test-line)
                             (center-point test-line))))
-                    ;; distance between lines is ont too long.
-                    (<= (min-distance line test-line)) 3) ; todo move 3 to setting!
+                    ;; distance between lines mustn't be too long.
+                    (<= (min-distance line test-line)) (get-line-search-radius))
 
                  (unless (member line lines-for-merging :test #'equal)
                    (remhash (first line) lines-hash)
@@ -388,12 +389,13 @@ element."
                    ;; move this to procedure
                    (remhash (first test-line) lines-hash)
                    (remhash (second test-line) lines-hash)
-                   (format t "Make line longer. source lines: ~A and ~A ~%" line test-line)
+                   ;;(format t "Make line longer. source lines: ~A and ~A ~%" line test-line)
                    (let ((new-line
                           (if (< (third test-line) (third line))
                               (merge-two-lines line test-line)
                               (merge-two-lines test-line line))))
-                     (format t "Result line: ~A ~%~%" new-line)
+                     ;; debug info here
+                     ;;(format t "Result line: ~A ~%~%" new-line)
                      (when (and
                             (not (one-line-lies-on-the-other line test-line))
                             (< 10 (abs (- (third new-line)
@@ -401,10 +403,14 @@ element."
                                              (third test-line))))))
                        (format t "Error: source lines: ~%~A~%~A~%" line test-line)
                        (format t "Resulting line:~%~A~%~%" new-line))
+                     (incf total-lines-merged)
                      (setf (gethash (first new-line) lines-hash) new-line)
                      (setf (gethash (second new-line) lines-hash) new-line))
                    (push test-line lines-for-merging)
-                   (return)))))))))     ; break from dolist
+                   (return))))
+             (setf lines-list nil))))     ; break from dolist
+    (format t "Merges: ~A~%" total-lines-merged)
+    total-lines-merged))
 
 (defun points-on-one-line? (points-list &key (distance-delta 1.2) (angle-delta 5))
  "Check if POINTS-LIST on one line. DISTANCE-DELTA -- maximum delta between each two

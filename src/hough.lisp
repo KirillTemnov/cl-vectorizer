@@ -270,14 +270,12 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
 ;;  (declare (optimize (speed 3)))
 
   (let* ((points-list-grid (separate-points-to-grid points-hash max-distance))
-
          (circles-hash (make-hash-table :test #'equal :size 2048))
          circle-params
          (index 0))
-;;        (index (length points-list-grid)))
 
     (dolist (points-list points-list-grid)
-      (format t "Tick = ~A~%" index)
+;;      (format t "Tick = ~A~%" index)
       (incf index)
       (dolist (p1 points-list)
         (dolist (p2 points-list)
@@ -299,7 +297,6 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
            (remhash circle circles-hash)))
     (print-hash circles-hash)
     (format t "circles: ~A~%"      (hash-table-count circles-hash))
-
     circles-hash))
 
 
