@@ -208,7 +208,7 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
 
 (defun find-circles2 (points-hash max-distance min-radius)
   "Find circles by Hough transformation."
-;;  (declare (optimize (speed 3)))
+  ;;  (declare (optimize (speed 3)))
 
   (let* ((points-list-grid (separate-points-to-grid points-hash max-distance))
          (circles-hash (make-hash-table :test #'equal :size 2048))

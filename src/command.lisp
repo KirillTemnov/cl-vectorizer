@@ -152,11 +152,28 @@ TODO Add default values.
 
     (when (get-debug-mode) (format t "export to svg ... ~%"))
     (remove-hash-lines-duplicates lines-ht)
+    ;; (maphash #'(lambda (point line)
+    ;;              (when (< 40 (third line))
+    ;;                (remhash point lines-ht)))
+    ;;          lines-ht)
+
+    ;; (format t "Source lines ~%"  )
+    ;; (print-hash lines-ht)
+    ;; (let ((hls  (get-connected-lines lines-ht)))
+    ;;   (format t "HLS = ~A~%" hls)
+    ;;   (dolist (hl hls)
+    ;;     (unless (eq nil hl)
+    ;;       (format t "~%~%Connected region~%"  )
+    ;;       (print-hash hl))))
 
     (format t "Circles: ")
-    (setf hash-4-circles (filter-hash lines-ht #'(lambda (line) (< (third line) 30))))
+    (setf hash-4-circles (filter-hash lines-ht #'(lambda (line) (< (third line) 40))))
     (format t "Total lines for circles: ~A~%" (hash-table-count hash-4-circles))
-    (setf circles-hash (find-circles2 lines-ht max-distance 10))
+    (setf circles-hash 
+          (filter-hash (find-circles2 lines-ht max-distance 10)
+                       #'(lambda (value)
+                           (< 500 value))))
+          
     (print-hash circles-hash)
     (hashtable-circles-to-svg-manager circles-hash manager)
 
@@ -167,11 +184,11 @@ TODO Add default values.
 
 
 
-    (hashtable-lines-to-dxf-manager lines-ht dxf-manager)
+    ;; (hashtable-lines-to-dxf-manager lines-ht dxf-manager)
 
-    (format t "Points for circles: ~A~%" (hash-table-count  hash-4-circles))
-    (sb-dxf:flush-manager dxf-manager)
-;;    (format t "Poccibly circles: ~A~%" (find-circles2 hash-4-circles 600 20))
+    ;; (format t "Points for circles: ~A~%" (hash-table-count  hash-4-circles))
+    ;; (sb-dxf:flush-manager dxf-manager)
+;;    (format t "Possibly circles: ~A~%" (find-circles2 hash-4-circles 600 20))
 
     lines-ht))
 

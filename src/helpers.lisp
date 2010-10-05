@@ -279,11 +279,23 @@ Example:
     (sqrt (+ (* dx dx)  (* dy dy)))))
 
 (defun hashtable-keys-to-list (hash)
-  "Create list from hash table keys."
+  "Create list from HASH keys."
   (let (lst)
-    (loop for key being the hash-key of hash do
-	 (Push key lst))
+    (maphash #'(lambda (key value)
+                 (declare (ignore value))
+                 (push key lst))
+             hash)
     lst))
+
+(defun hashtable-values-to-list (hash)
+  "Create list from HASH values."
+  (let (lst)
+    (maphash #'(lambda (key value)
+                 (declare (ignore key))
+                 (push value lst))
+             hash)
+    lst))
+
 
 (defun remove-list-element-from-hash (list hash)
   (dolist (i list)
@@ -404,6 +416,8 @@ Example:
       nil))
 
 (defun generate-near-points (point distance)
+  "Generate near points for POINT. Near points are in square form -DISTANCE  to +DISTANCE
+from the POINT."
   (let ((x (first point))
         (y (second point))
         points)
@@ -421,8 +435,6 @@ Example:
                    (setf (gethash key ht) value)))
              hash)
     ht))
-
-
 
 (defun inverse-y (point)
   "Inverse y value of a POINT."

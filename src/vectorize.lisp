@@ -510,3 +510,73 @@ Example:
 ;; (make-line-longer '(19 20) '(20 43) 5)
 ;; (+ (get-points-distance  '(2 6) '(17 6) ) 8)
 
+
+;; (defun get-near-lines (line hash-lines max-distance)
+;;   "Return hash from HASH-LINES, which lines that distance from LINE less
+;;  of equal to MAX-DISTANCE."
+;;   (filter-hash hash-lines
+;;                #'(lambda (cur-line)
+;;                    (and
+;;                     (not (equal cur-line line))
+;;                     (<= (get-lines-min-distance line cur-line) max-distance)))))
+
+
+;; (defun get-connected-lines-r (line lines-list max-distance)
+;;   ""
+;;   (let (near-lines new-list)
+;;     (push line near-lines)
+;;     (format t "seems to be ok here~%"  )
+;;     (mapc #'(lambda (cur-line)
+;;               (when (and
+;;                      (not (equal cur-line line))
+;;                      (<= (get-lines-min-distance line cur-line) max-distance))
+;;                 (push cur-line near-lines))) lines-list)
+;;     (format t "near lines ~A ~%"  near-lines)
+;;     (let ((len (length lines-list)))
+;;       (setf new-list
+;;             (remove-if #'(lambda (cur-line)
+;;                            (progn
+;;                            (format t "cur-line ~A ~%" cur-line)
+;;                            (member cur-line near-lines :test #'equal)))
+;; ;;                           (<= (get-lines-min-distance line cur-line) max-distance))
+;;                        lines-list))
+;;       (when (= len (length new-list))
+;;         (format t "Return~%"  )
+;;         (return-from get-connected-lines-r new-list)))
+
+;;     (format t "result of deleting : ~A ~%" lines-list)
+;;     (when (< 0 (length near-lines))
+;;       (dolist (cur-line near-lines)
+;;         (setf near-lines (append near-lines
+;;                                  (get-connected-lines-r cur-line new-list max-distance)))))
+;;     near-lines))
+
+;; (defun get-connected-lines (hash-lines &key (max-lines-distance (get-max-small-line-length)))
+;;   "Split HASH-LINES into several hashes, in which lines are connected betweeneach other.
+;; Connected lines distances from each other to less than MAX-LINES-DISTANCE."
+;;   (let ((used-lines-hash (make-hash-table :size (hash-table-count hash-lines) :test #'equal))
+;;         hashes-list)
+;;     (loop for point being the hash-key of hash-lines
+;;        using (hash-value line)  do
+;;          (format t "Line  = ~A~%" line)
+;;          (when (eq nil (gethash line used-lines-hash))
+;;            (format t "NOT EQUAL!~%"  )
+;;            (setf (gethash line used-lines-hash) t)
+
+;;            (let ((lines-added 1) filtered-lines-hash
+;;                  (region-lines-hash (make-hash-table :test #'equal)))
+
+;;              (setf (gethash line region-lines-hash) t)
+;;              (loop while (< 0 lines-added) do
+
+;;                   (setf lines-added 0)
+;;                   (setf filtered-lines-hash (get-near-lines line hash-lines max-lines-distance))
+
+;;                   (loop for a-point being the hash-key of filtered-lines-hash
+;;                      using (hash-value line-to-add) do
+;;                        (when (not (eq nil (gethash line-to-add used-lines-hash)))
+;;                          (incf lines-added)
+;;                          (setf (gethash line-to-add used-lines-hash) t)
+;;                          (setf (gethash line-to-add region-lines-hash) t))))
+;;              (push region-lines-hash hashes-list))))
+;;     hashes-list))
