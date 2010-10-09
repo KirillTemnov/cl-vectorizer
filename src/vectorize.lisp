@@ -395,7 +395,7 @@ element."
                    (push test-line lines-for-merging)
                    (return))))
              (setf lines-list nil))))     ; break from dolist
-    (when (debug-mode) (format t "Merges: ~A~%" total-lines-merged))
+    (when (get-debug-mode) (format t "Merges: ~A~%" total-lines-merged))
     total-lines-merged))
 
 (defun points-on-one-line? (points-list &key (distance-delta 1.2) (angle-delta 5))
