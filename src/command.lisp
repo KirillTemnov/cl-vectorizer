@@ -125,7 +125,7 @@ TODO Add default values.
     save-filename))
 
 
-(defun thin-image-file (infile &key (max-distance 100)
+(defun thin-image-file (infile &key (max-distance 10)
                         (outfile (change-extension infile "png")))
   "Thin image in one file and save to another."
   (let* ((image-path (resize-to-fixed-dpi infile :dest-filename (get-temp-png-file) :final-dpi 150))
@@ -169,18 +169,36 @@ TODO Add default values.
     (format t "Circles: ")
     (setf hash-4-circles (filter-hash lines-ht #'(lambda (line) (< (third line) 40))))
     (format t "Total lines for circles: ~A~%" (hash-table-count hash-4-circles))
-    (setf circles-hash 
+    ;; (let ((circles-filtered-hash (make-hash-table :test #'equal)))
+    ;;   (maphash
+    ;;    #'(lambda (circle value)
+    ;;        (format t "ping. ~%"  )
+    ;;        (when
+    ;;            (or
+    ;;             (and
+    ;;              (< (first circle) 20)
+    ;;              (< 500 value))
+    ;;             (and
+    ;;              (< 20 (first circle) 30)
+    ;;              (< 800 value)))
+    ;;          (setf (gethash circle circles-filtered-hash) value)))
+    ;;    circles-hash)
+    ;;   (print-hash circles-filtered-hash)
+    ;;   (setf circles-hash circles-filtered-hash))
+
+    (setf circles-hash
           (filter-hash (find-circles2 lines-ht max-distance 10)
                        #'(lambda (value)
                            (< 500 value))))
-          
+
+
     (print-hash circles-hash)
     (hashtable-circles-to-svg-manager circles-hash manager)
 
     (setf manager (hashtable-lines-to-svg-manager lines-ht manager
                                                   :short-lines-color "magenta"))
 
-    (flush-manager manager #p"out.svg")
+    (flush-manager manager (get-out-path (change-extension infile "svg")))
 
 
 
@@ -279,6 +297,16 @@ TODO Add default values.
 
     (add-entity manager (make-svg-image outfile))
     (flush-manager manager #p"out.svg")))
+
+(defun thin-images-in-dir (&key (extension "tif"))
+  "Batch thin images in working in directory.
+Images EXTENSION can be optionally passed (default is tif)."
+  (dolist (file (directory (merge-pathnames
+                            (get-working-dir-in)
+                            (concatenate 'string "*." extension))))
+    (format t "Thining File: ~A~%" file)
+    (thin-image-file file)))
+
 
 
 (defun guess-format (image-path)

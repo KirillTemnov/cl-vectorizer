@@ -27,7 +27,7 @@
 ;;------------------------------------------------------------------------------
 ;; Formating
 ;;------------------------------------------------------------------------------
-(defvar version "0.4.0" "Package version.")
+(defvar version "0.5.0" "Package version.")
 ;; format sizes
 (defvar +a0+ '(841 1189))
 (defvar +a0-landscape+ '(1189 841))
@@ -202,6 +202,10 @@ abc
 	  :set-docstring "Set debug-mode. If debug-mode set to t, debug messages prints to stdout."
 	  :get-docstring "Get debug-mode state (t or nil - default).")
 
+(property info-mode
+          :set-docstring "Set info-mode.. If info-mode set to t, info  messages prints to stdout."
+	  :get-docstring "Get info-mode state (t or nil - default).")
+
 (property max-angle-on-line
 	  :set-docstring "Set maximum angle deviation from one point to other in one straight line."
 	  :get-docstring "Get maximum angle deviation from one point to other in one straight line.")
@@ -267,3 +271,5 @@ abc
 (set-min-histogram-value-of-circle-edge 7)
 
 (set-max-distance-between-lines 3)
+
+(set-info-mode nil)
