@@ -201,7 +201,7 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
 
                     (incf (gethash circle circles-hash))))))))))
 
-    (format t "circles: ~A~%"      (hash-table-count circles-hash))
+    (when (get-debug-mode) (format t "circles: ~A~%"      (hash-table-count circles-hash)))
     (print-hash circles-hash)
     circles-hash))
 
@@ -236,11 +236,9 @@ Resulting circle and its points writes to CIRCLES-HASH, other circles removed fr
                    (remhash circle circles-hash)))
              circles-hash)
 
-    ;; debug info
-    (format t "circles: ~A~%~%"      (hash-table-count circles-hash))
     (print-hash circles-hash)
     (merge-hashed-circles circles-hash)
-    (format t "circles 2: ~A~%"      (hash-table-count circles-hash))
+    (when (get-debug-mode) (format t "circles 2: ~A~%"      (hash-table-count circles-hash)))
 
     circles-hash))
 

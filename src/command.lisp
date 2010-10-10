@@ -30,6 +30,12 @@ Resolution is in DPI"
     (setf (getf image-plist :height) (second str-data-formated))
     (setf (getf image-plist :xresolution) (third str-data-formated))
     (setf (getf image-plist :yresolution) (fourth str-data-formated))
+    (when (get-info-mode)
+      (format t "Image info: ~A x ~A (~Adpi x ~Adpi)~%"
+              (first str-data-formated)
+              (second str-data-formated)
+              (third str-data-formated)
+              (fourth str-data-formated)))
     image-plist))
 
 (defun cut-image-sizes (width height crop-width crop-heigth)
@@ -77,7 +83,8 @@ Converted files moved to output folder.
 		      (add-to-filename source-filename
 				       (format nil "-~a" (first image-size))) "png")
 		     :options   (list "-crop"
-				      (format nil "~ax~a+~a+~a" +sheet-width+ +sheet-height+ (first (second image-size)) (second (second image-size))))))))
+				      (format nil "~ax~a+~a+~a" +sheet-width+ +sheet-height+
+                                              (first (second image-size)) (second (second image-size))))))))
 
 
 (defun convert-image (source-filename  &key (dest-filename source-filename) options)
@@ -124,6 +131,54 @@ TODO Add default values.
 				  "-adaptive-resize" (format nil "~sx~s" w h)))
     save-filename))
 
+(defun thin-image-file-profiling (infile &key (max-distance 10)
+                        (outfile (change-extension infile "png")))
+  "Thin image in one file and save to another. Profiling function!"
+  (let* (image-path ht
+         w h manager
+         (dxf-manager (sb-dxf:create-manager :filename (change-extension infile "dxf")))
+         hash-4-circles
+	 lines-ht
+         circles-hash)
+
+    (format t "Resize...~%" )
+    (time
+     (progn
+       (setf image (load-image (resize-to-fixed-dpi infile :dest-filename (get-temp-png-file) :final-dpi 150)))))
+
+    (setf w (png:image-width image))
+    (setf h (png:image-height image))
+    (setf manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
+
+    (format t "~%Thin image ...~%" )
+    (time
+     (setf ht (thin-image-hash (image-to-hashtable image))))
+
+    (save-image (hashtable-to-image ht) (get-out-path outfile))
+
+
+    (setf lines-ht (merge-near-lines (vectorize-hash ht)))
+
+    (remove-hash-lines-duplicates lines-ht)
+
+    (setf circles-hash
+          (filter-hash (find-circles2 lines-ht max-distance 10)
+                       #'(lambda (value)
+                           (< 500 value))))
+
+
+    (when (get-debug-mode) (print-hash circles-hash))
+    (hashtable-circles-to-svg-manager circles-hash manager)
+
+    (when (get-info-mode)
+      (format t "Lines found:~A~%" (hash-table-count lines-ht)))
+
+    (setf manager (hashtable-lines-to-svg-manager lines-ht manager
+                                                  :short-lines-color "magenta"))
+
+    (flush-manager manager (get-out-path (change-extension infile "svg")))
+
+    lines-ht))
 
 (defun thin-image-file (infile &key (max-distance 10)
                         (outfile (change-extension infile "png")))
@@ -146,11 +201,11 @@ TODO Add default values.
     (when (get-debug-mode)
       (format t "vectorize ... ~%" )
       (format t "Total lines ~a ~%" (hash-table-count ht ))
-      )
+      (format t "export to svg ... ~%"))
+
 
     (setf lines-ht (merge-near-lines (vectorize-hash ht)))
 
-    (when (get-debug-mode) (format t "export to svg ... ~%"))
     (remove-hash-lines-duplicates lines-ht)
     ;; (maphash #'(lambda (point line)
     ;;              (when (< 40 (third line))
@@ -166,9 +221,8 @@ TODO Add default values.
     ;;       (format t "~%~%Connected region~%"  )
     ;;       (print-hash hl))))
 
-    (format t "Circles: ")
     (setf hash-4-circles (filter-hash lines-ht #'(lambda (line) (< (third line) 40))))
-    (format t "Total lines for circles: ~A~%" (hash-table-count hash-4-circles))
+    (when (get-debug-mode) (format t "Total lines for circles: ~A~%" (hash-table-count hash-4-circles)))
     ;; (let ((circles-filtered-hash (make-hash-table :test #'equal)))
     ;;   (maphash
     ;;    #'(lambda (circle value)
@@ -192,8 +246,11 @@ TODO Add default values.
                            (< 500 value))))
 
 
-    (print-hash circles-hash)
+    (when (get-debug-mode) (print-hash circles-hash))
     (hashtable-circles-to-svg-manager circles-hash manager)
+
+    (when (get-info-mode)
+      (format t "Lines found:~A~%" (hash-table-count lines-ht)))
 
     (setf manager (hashtable-lines-to-svg-manager lines-ht manager
                                                   :short-lines-color "magenta"))
@@ -229,11 +286,11 @@ TODO Add default values.
                            (first max-coords))
                            (format nil "~apx"  (second max-coords))))
 	 circles-hash)
-    (format t "BEFORE SAVE~%"  )
+    (when (get-debug-mode) (format t "BEFORE SAVE~%"  ))
     (setf ht (thin-image-hash ht))
     (save-image (hashtable-to-image ht) (get-out-path outfile))
 
-    (format t "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<----------AFTER SAVE,,,,~%"  )
+    (when (get-debug-mode)(format t "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<----------AFTER SAVE,,,,~%"  ))
 
 
     ;; (save-image (hashtable-to-image points-ht) (get-out-path outfile))
@@ -253,7 +310,7 @@ TODO Add default values.
                :offset-y (floor (/ window-size 2)))
 
     (add-entity manager (make-svg-image outfile))
-    (flush-manager manager #p"out.svg")))
+    (flush-manager manager (get-out-path (change-extension infile "svg")))))
 
 (defun get-image-circles2 (infile min-radius &key (outfile (change-extension infile "png")))
   "Thin image and extract circles from it."
@@ -296,7 +353,7 @@ TODO Add default values.
     (hashtable-circles-to-svg-manager circles-hash manager)
 
     (add-entity manager (make-svg-image outfile))
-    (flush-manager manager #p"out.svg")))
+    (flush-manager manager (get-out-path (change-extension infile "svg")))))
 
 (defun thin-images-in-dir (&key (extension "tif"))
   "Batch thin images in working in directory.
@@ -304,8 +361,10 @@ Images EXTENSION can be optionally passed (default is tif)."
   (dolist (file (directory (merge-pathnames
                             (get-working-dir-in)
                             (concatenate 'string "*." extension))))
-    (format t "Thining File: ~A~%" file)
-    (thin-image-file file)))
+    (when (get-info-mode)
+      (format t "Thining File: ~A~%" file))
+    (thin-image-file-profiling file)
+    (format t "~%~%~%")))
 
 
 

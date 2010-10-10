@@ -468,8 +468,8 @@ from the POINT."
                (setf color long-lines-color))
 	   (add-entity manager (make-svg-line line :color color))))
 
-;;    (when (get-debug-mode)
-    (format t "Total ~A lines pushed to svg manager (~A short lines).~%" lines short-lines)
+    (when (get-debug-mode)
+      (format t "Total ~A lines pushed to svg manager (~A short lines).~%" lines short-lines))
     manager))
 
 (defun hashtable-circles-to-svg-manager (circles manager)

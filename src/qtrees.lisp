@@ -337,7 +337,7 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
     (recalc-colors tree)
     ;; todo delete this
     (save-image (hashtable-to-image (tree-image-hash tree))  #p"/tmp/out.png")
-    (format t "Tree created successfuly ~%")
+    (when (get-debug-mode) (format t "Tree created successfuly ~%"))
     tree))
 
 ;; create image and save nodes to it
