@@ -451,6 +451,15 @@ from the POINT."
                                             :end-point (inverse-y (second line))))))
   manager)
 
+(defun hashtable-circles-to-dxf-manager (ht manager)
+  "Save circles from hash keys to dxf manager"
+  (loop for circle being the hash-key of ht
+     ;;  using (hash-value value)
+     do
+       (sb-dxf:add-object manager (make-instance 'sb-dxf:dxf-circle
+                                                 :center-point (inverse-y (second circle))
+                                                 :radius (first circle)))))
+
 
 (defun hashtable-lines-to-svg-manager (ht manager &key
                                        (short-lines-color "blue")

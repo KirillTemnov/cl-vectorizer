@@ -216,7 +216,7 @@ STATE is a property list, must have at least :CONDITION, :LABEL and :ROOT-NODE p
         nil
         ;; (return-from label-neib-r nil)                 ;
         (let* ((pathes-list (get-pathes-list path)) stack-for-pathes nd)
-          (setf (node-label node) label-for-node)
+          (setf (node-label node) (1+ label-for-node))
           (loop do
                (setf stack-for-pathes nil)
                (dolist (p pathes-list)

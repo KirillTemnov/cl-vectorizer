@@ -133,13 +133,13 @@ TODO Add default values.
 
 (defun thin-image-file-profiling (infile &key (max-distance 10)
                         (outfile (change-extension infile "png")))
-  "Thin image in one file and save to another. Profiling function!"
-  (let* (image-path ht
+  "Thin image in one file and save to another. Profiling function!
+Work as if info-mode set to T."
+  (let* (image ht
          w h manager
-         (dxf-manager (sb-dxf:create-manager :filename (change-extension infile "dxf")))
-         hash-4-circles
 	 lines-ht
-         circles-hash)
+         circles-hash
+         qtree)
 
     (format t "Resize...~%" )
     (time
@@ -150,28 +150,65 @@ TODO Add default values.
     (setf h (png:image-height image))
     (setf manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
 
-    (format t "~%Thin image ...~%" )
+    (format t "Thin image ...~%" )
     (time
      (setf ht (thin-image-hash (image-to-hashtable image))))
+
 
     (save-image (hashtable-to-image ht) (get-out-path outfile))
 
 
-    (setf lines-ht (merge-near-lines (vectorize-hash ht)))
-
-    (remove-hash-lines-duplicates lines-ht)
-
-    (setf circles-hash
-          (filter-hash (find-circles2 lines-ht max-distance 10)
-                       #'(lambda (value)
-                           (< 500 value))))
+    (format t "Merging Lines ...~%")
+    (time
+     (progn
+       (setf lines-ht (merge-near-lines (vectorize-hash ht)))
+       (remove-hash-lines-duplicates lines-ht)))
+    (format t "Lines total:~A~%" (hash-table-count lines-ht))
 
 
-    (when (get-debug-mode) (print-hash circles-hash))
+    (format t "Finding circles ...~%")
+    (time
+     (setf circles-hash
+           (filter-hash (find-circles2 lines-ht max-distance 10)
+                        #'(lambda (value)
+                            (< 500 value)))))
+
+    (format t "Building qtree ~%")
+    (time
+     (progn
+       (setf qtree (make-qt infile))
+       (with-slots (root-node) qtree
+         (format t "root size ~a~%" (slot-value root-node 'size))
+         (recalc-colors root-node))))
+
+
+
+    (format t "Symbols search~%")
+    (time
+     (label-neib qtree #'(lambda (node  &key path state)
+                           (declare (ignore path state))
+                          (let ((label-for-node 5)); (getf state :label)))
+                            (with-slots (size density label) node
+                              (if (not (eq 0 label))
+                                  nil
+                                  (case size
+                                    ;; (64
+                                    ;;  (if (< 0.8 density) (setf label label-for-node) nil))
+                                    ;; (32
+                                    ;;  (if (< 0.4 density) (setf label label-for-node) nil))
+                                    ;; (16
+                                    ;;  (if (< 0.3 density 0.4) (setf label label-for-node) nil))
+                                    (8
+                                     (if (< 0.4 density) (setf label label-for-node) nil))
+                                    (4
+                                     (if (< 0.3 density ) (setf label label-for-node) nil))
+                                    (2
+                                     (if (< 0.2 density ) (setf label label-for-node) nil))
+                                    (otherwise nil)))))) :min-node-size 4))
+
+
     (hashtable-circles-to-svg-manager circles-hash manager)
 
-    (when (get-info-mode)
-      (format t "Lines found:~A~%" (hash-table-count lines-ht)))
 
     (setf manager (hashtable-lines-to-svg-manager lines-ht manager
                                                   :short-lines-color "magenta"))
@@ -189,7 +226,8 @@ TODO Add default values.
          (h (png:image-height image))
 	 (ht (thin-image-hash (image-to-hashtable image)))
 	 (manager (create-svg-manager  (format nil "~apx" w) (format nil "~apx"  h)))
-         (dxf-manager (sb-dxf:create-manager :filename (change-extension infile "dxf")))
+         (dxf-manager (sb-dxf:create-manager
+                       :filename (get-out-path (change-extension infile "dxf"))))
          hash-4-circles
 	 lines-ht
          circles-hash)
@@ -258,13 +296,11 @@ TODO Add default values.
     (flush-manager manager (get-out-path (change-extension infile "svg")))
 
 
+    (hashtable-lines-to-dxf-manager lines-ht dxf-manager)
+    (hashtable-circles-to-dxf-manager circles-hash dxf-manager)
 
-    ;; (hashtable-lines-to-dxf-manager lines-ht dxf-manager)
 
-    ;; (format t "Points for circles: ~A~%" (hash-table-count  hash-4-circles))
-    ;; (sb-dxf:flush-manager dxf-manager)
-;;    (format t "Possibly circles: ~A~%" (find-circles2 hash-4-circles 600 20))
-
+    (sb-dxf:flush-manager dxf-manager)
     lines-ht))
 
 (defun get-image-circles (infile min-radius &key (max-radius-error 3)
@@ -355,7 +391,7 @@ TODO Add default values.
     (add-entity manager (make-svg-image outfile))
     (flush-manager manager (get-out-path (change-extension infile "svg")))))
 
-(defun thin-images-in-dir (&key (extension "tif"))
+(defun thin-images-in-dir (&key (extension "tif") (max-distance 10))
   "Batch thin images in working in directory.
 Images EXTENSION can be optionally passed (default is tif)."
   (dolist (file (directory (merge-pathnames
@@ -363,8 +399,9 @@ Images EXTENSION can be optionally passed (default is tif)."
                             (concatenate 'string "*." extension))))
     (when (get-info-mode)
       (format t "Thining File: ~A~%" file))
-    (thin-image-file-profiling file)
-    (format t "~%~%~%")))
+    (thin-image-file-profiling file :max-distance max-distance)
+    (when (get-info-mode)
+      (format t "~%~%--------------------------------------------------~%"))))
 
 
 
